@@ -9,13 +9,16 @@ on:
 jobs:
   build:
 
-    runs-on: alpine-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies (alpine pkgs)
-      run: apk update && apk add --no-cache make uv python3
+    - name: Install dependencies (apt-get)
+      run: apt-get update -y && apt-get install -y make curl python3
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
     - name: Create venv (uv)
       run: uv venv venv_uredis
