@@ -6,9 +6,15 @@ def print_green(message: str, colors: bool) -> None:
     else:
         print(message)
 
-def print_yellow(message: str|bytes, colors: bool) -> None:
+def print_yellow_bytes(message: bytes, colors: bool) -> None:
     if colors:
-        print("\033[33m{}\033[0m".format(message))
+        print("\033[33m{}\033[0m".format(message.decode('utf-8')))
+    else:
+        print(message.decode('utf-8'))
+
+def print_yellow(message: str, colors: bool) -> None:
+    if colors:
+        print("\033[33m{}\033[0m]".format(message))
     else:
         print(message)
 

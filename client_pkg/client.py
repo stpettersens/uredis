@@ -82,7 +82,7 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
             if is_unix_like():
                 print_yellow(format_resp(cmd), colors)
             else:
-                print_yellow(cmd, colors)
+                print_yellow_bytes(cmd, colors)
 
         s.send(cmd)
         response, _type = RespDecoder(s.recv(1024), cmd).decode()

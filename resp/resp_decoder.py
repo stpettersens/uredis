@@ -1,5 +1,6 @@
 # $client
 
+from typing import Tuple
 from itertools import count
 
 from resp.resp_type import RespType
@@ -9,7 +10,7 @@ class RespDecoder:
         self.response: str = response.decode('utf-8')
         self.command: str = command.decode('utf-8')
 
-    def decode(self) -> (str, RespType):
+    def decode(self) -> Tuple[str, RespType]:
         if self.command.find('INFO') != -1:
             out: list[str] = self.response.split('\r\n')
             out.pop(0)
@@ -84,3 +85,5 @@ class RespDecoder:
             decoded: str = self.response.split('\r\n')[1].strip()
             decoded = '"{}"'.format(decoded)
             return (decoded, RespType.STRING)
+
+        return ('', RespType.EMPTY)
