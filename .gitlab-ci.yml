@@ -1,0 +1,22 @@
+image: alpine
+before_script:
+    - apk update
+    - apk add --no-cache make uv python3
+    - uv venv venv_uredis
+    - source venv_uredis/bin/activate
+    - uv pip sync requirements.txt
+
+check:
+  script:
+    - echo "Checking with mypy..."
+    - make check
+
+build:
+  script:
+    - echo "Building..."
+    - make build
+
+test_parser:
+  script:
+    - echo "Testing RESP parser..."
+    - make test_parser

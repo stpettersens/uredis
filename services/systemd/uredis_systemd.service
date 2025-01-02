@@ -1,0 +1,14 @@
+[Unit]
+Description=uredis-server service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=uredis
+ExecStart=/usr/bin/env python3 /opt/uredis/uredis-server.pyz -z 2000000000 --daemon-safe
+
+[Install]
+WantedBy=multi-user.target

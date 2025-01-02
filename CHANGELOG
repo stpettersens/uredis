@@ -1,0 +1,11 @@
+v0.2.0:
+* Implement INFO command.
+
+* Restructed code into modules.
+
+TODO fix this on Windows:
+* Server now also exits from a SIGBREAK (Ctrl+Break/Pause on Windows).
+  Use __slots__ for RedisRecord (!TO CONFIRM)
+
+v0.1.0
+* Initial version, only supports simple string records.
