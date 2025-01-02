@@ -2,13 +2,19 @@ PYTHON=$(shell ./detect_py)
 make: server client
 
 # For inside venv.
-check:
-	#mypy server__main__.py
-	mypy client__main__.py
+check_client:
+	uvx mypy client__main__.py
 	@echo
 
-build:
-	python3 build_server_zipapp.py
+check_server:
+	uvx mypy server__main__.py
+	@echo
+
+build_client:
+	python3 build_server_zipapp.pya
+	@echo
+
+build_server:
 	python3 build_client_zipapp.py
 	@echo
 
