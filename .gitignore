@@ -1,5 +1,5 @@
 __pycache__
-venv_uredis
+.venv
 .mypy_cache
 *.pyz
 *.rdb
