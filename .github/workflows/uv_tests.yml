@@ -20,6 +20,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Create venv (uv)
+        run: uv venv venv_uredis && source venv_uredis/bin/activate
+
       - name: Install project testing dependencies (uv)
         run: uv pip sync requirements.txt
 
