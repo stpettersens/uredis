@@ -25,3 +25,6 @@ jobs:
 
       - name: Run client source checks (uvx mypy)
         run: make check_client
+
+      - name: Run server source checks (uvx mypy)
+        run: make check_server

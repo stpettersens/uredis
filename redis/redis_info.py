@@ -11,28 +11,19 @@ from detection.detection import get_os, get_arch_bits
 
 DateTime: TypeAlias = datetime
 
-def get_start_time() -> DateTime:
-    if os.path.exists('.uredis_start_time'):
-        with open('.uredis_start_time', 'rb') as ust:
-            return pickle.load(ust)
-    else:
-        return datetime.now()
-
 class RedisInfo:
     def __init__(self, version: str, port: int) -> None:
         self.version: str = version
         self.port: int = port
 
-        print(get_start_time()) # !!!
-
     def get(self, section: bytes = b'') -> bytes:
         ssection: str = section.decode('utf-8')
-        if ssection == '':
-            return self.get_all_sections()
 
-        elif ssection.lower() == 'server':
+        if ssection.lower() == 'server':
             return str.encode("${}\r\n{}"
             .format(len(self.get_server_section()), self.get_server_section()))
+
+        return self.get_all_sections()
 
     def get_all_sections(self) -> bytes:
         sections: str = '$5260\r\n{}'.format(self.get_server_section())

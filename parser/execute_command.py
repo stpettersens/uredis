@@ -5,6 +5,7 @@ import math
 import logging
 from typing import TypeAlias
 
+from server_pkg.logs import Logs
 from resp.resp_commands import RespCommands
 from redis.redis_record import RedisRecord
 from redis.redis_records import RedisRecords
@@ -13,11 +14,10 @@ from redis.redis_hello import RedisHello
 from redis.redis_info import RedisInfo
 from redis.redis_ping import RedisPing
 from redis.redis_echo import RedisEcho
-from server_pkg.logs import Logs
 
 Socket: TypeAlias = socket.socket
 
-def print_log(message: bytes, logs: Logs, request: bool = False) -> None:
+def print_log(message: str|bytes, logs: Logs, request: bool = False) -> None:
     if logs == Logs.NO_LOGGING:
         return
 
@@ -29,10 +29,13 @@ def print_log(message: bytes, logs: Logs, request: bool = False) -> None:
     logging.info(msg.strip())
 
 def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str, records: RedisRecords, protocol: int, command: bytes, params: bytes = b'') -> None:
-    if params == '':
-        print_log('Client {} sent request: {}'.format(conn.getpeername(), command), logs, True)
+    if params == b'':
+        print_log('Client {} sent request: {}'
+        .format(conn.getpeername(), command.decode('utf-8')), logs, True)
     else:
-        print_log('Client {} sent request: {} with {}'.format(conn.getpeername(), command, params), logs, True)
+        print_log('Client {} sent request: {} with {}'
+        .format(conn.getpeername(), command.decode('utf-8'),
+        params.decode('utf-8')), logs, True)
 
     str_command: str = command.decode('utf-8')
     str_params: str = params.decode('utf-8')
@@ -154,9 +157,9 @@ def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str,
                 print_log('b:-2\r\n', logs)
                 conn.send(b':-2\r\n')
             else:
-                ttl: bytes = record.get_ttl_as_bytes()
-                print_log(ttl, logs)
-                conn.send(ttl)
+                ttl_bytes: bytes = record.get_ttl_as_bytes()
+                print_log(ttl_bytes, logs)
+                conn.send(ttl_bytes)
 
     elif command == b'DEL':
         if len(params) == 0:
@@ -169,9 +172,9 @@ def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str,
             conn.send(deleted)
 
     elif command == b'FLUSHDB' or command == b'FLUSHALL':
-        deleted: bytes = records.delete_all_records()
-        print_log(deleted, logs)
-        conn.send(deleted)
+        deleted_flush: bytes = records.delete_all_records()
+        print_log(deleted_flush, logs)
+        conn.send(deleted_flush)
 
     elif command == b'KEYS':
         if len(params) == 0:

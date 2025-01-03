@@ -7,12 +7,12 @@ from redis.redis_record import RedisRecord
 
 UUID: TypeAlias = uuid.UUID
 
-class RedisRecords():
-    def __init__(self):
+class RedisRecords:
+    def __init__(self) -> None:
         self.uuid: UUID = uuid.uuid4()
         self.records: dict = {}
 
-    def _update_uuid(self):
+    def _update_uuid(self) -> None:
         # We call this method whenever we
         # push records or delete records.
         self.uuid = uuid.uuid4()
@@ -33,7 +33,7 @@ class RedisRecords():
         self._update_uuid()
         self.records[str(key)] = record
 
-    def get_record(self, key: bytes) -> RedisRecord:
+    def get_record(self, key: str|bytes) -> RedisRecord:
         if not str(key) in self.records:
             return RedisRecord(b'', dummy=True)
         else:
@@ -44,7 +44,7 @@ class RedisRecords():
         self.records = {}
         return b'+OK\r\n'
 
-    def delete_record(self, key: bytes) -> bytes:
+    def delete_record(self, key: str|bytes) -> bytes:
         if not str(key) in self.records:
             return b':0\r\n'
 

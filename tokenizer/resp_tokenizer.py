@@ -16,8 +16,8 @@ class Tokenizer:
         parsed.pop() # Pop last element in parsed.
 
         self.resp_str: str = ' '.join(parsed).strip()
-        self.curr_char: chr = ''
-        self.peek_char: chr = ''
+        self.curr_char: None|str = ''
+        self.peek_char: None|str = ''
         self.tokens: list[Token] = []
         self.pos: int = -1
 

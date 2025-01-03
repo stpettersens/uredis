@@ -201,15 +201,15 @@ def read(conn: Socket, logs: Logs, records: RedisRecords, protocol: int, port: i
               resp_str: str = data.decode('utf-8')
               parser = Parser(resp_str)
               cmd: bytes = b''
-              params: list[bytes] = []
+              params_list: list[bytes] = []
               for token in parser.get_tokens():
                   if token.kind() == TokenKind.CMD:
                       cmd = str.encode(token.value())
 
                   elif token.kind() == TokenKind.PARAM:
-                      params.append(str.encode(token.value()))
+                      params_list.append(str.encode(token.value()))
 
-              pams: bytes = b' '.join(params)
+              pams: bytes = b' '.join(params_list)
               execute_command(conn, port, cid, logs, get_version(), records, protocol, cmd, pams)
 
           # Raw input from TCP clients:
@@ -269,7 +269,8 @@ def main(args: list[str]) -> None:
     start_time: datetime = datetime.now()
 
     if is_windows():
-        signal.signal(signal.SIGBREAK, foo)
+        pass
+        #signal.signal(signal.SIGBREAK, foo)
         #signal.raise_signal(signal.SIGBREAK) # !!!
 
     try:
@@ -280,7 +281,7 @@ def main(args: list[str]) -> None:
         ])
 
     except getopt.GetoptError as e:
-        sys.exit(display_error(e))
+        sys.exit(display_error(str(e)))
 
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -324,7 +325,7 @@ def main(args: list[str]) -> None:
             log_file = a
 
         if o in ("-n", "--no-log"):
-            logs = Logging.NO_LOGGING
+            logs = Logs.NO_LOGGING
 
         if o in ("-u", "--update-disk"):
             update_disk = True
@@ -400,7 +401,7 @@ def main(args: list[str]) -> None:
 
     print_log('Server started at {}.'.format(start_time), logs)
 
-    records: RedisRecords = None
+    records: RedisRecords|None = None
     if not no_disk:
         records = load_records(working_dir, dump_db)
 
@@ -434,7 +435,7 @@ def main(args: list[str]) -> None:
 
     except OSError as e:
         print_gray('Is another server running on port {}?'.format(port), colors)
-        print_gray(e, colors)
+        print_gray(str(e), colors)
 
     except KeyboardInterrupt:
         ep: ExitParams = ExitParams(
