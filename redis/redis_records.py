@@ -1,6 +1,7 @@
 # $server
 
 import uuid
+
 from typing import TypeAlias
 
 from redis.redis_record import RedisRecord

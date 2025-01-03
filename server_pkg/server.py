@@ -182,7 +182,8 @@ def term_log(log_file: str) -> None:
         os.remove(log_file)
         logging.info('[TRUNCATED]')
 
-def accept(s: Socket, logs: Logs, records: RedisRecords, protocol: int, port: int) -> None:
+def accept(s: Socket, working_dir: str, logs: Logs, records: RedisRecords,
+protocol: int, port: int, start_time: datetime) -> None:
       conn, addr = s.accept()
       Connections().set(conn.getpeername())
       cid: int = Connections().get(conn.getpeername())
@@ -190,8 +191,10 @@ def accept(s: Socket, logs: Logs, records: RedisRecords, protocol: int, port: in
       conn.setblocking(True)
       sel.register(conn, selectors.EVENT_READ, read)
 
-def read(conn: Socket, logs: Logs, records: RedisRecords, protocol: int, port: int) -> None:
+def read(conn: Socket, working_dir: str, logs: Logs, records: RedisRecords,
+protocol: int, port: int, start_time: datetime) -> None:
       cid: int = Connections().get(conn.getpeername())
+      num_conns: int = Connections().get_count()
       data: bytes = conn.recv(1024)
       params: bytes = b''
 
@@ -210,7 +213,9 @@ def read(conn: Socket, logs: Logs, records: RedisRecords, protocol: int, port: i
                       params_list.append(str.encode(token.value()))
 
               pams: bytes = b' '.join(params_list)
-              execute_command(conn, port, cid, logs, get_version(), records, protocol, cmd, pams)
+              execute_command(conn, port, cid, num_conns, working_dir,
+              logs, get_version(), records, protocol,
+              start_time, cmd, pams)
 
           # Raw input from TCP clients:
           elif data.find(b'\r\n') != -1:
@@ -221,15 +226,19 @@ def read(conn: Socket, logs: Logs, records: RedisRecords, protocol: int, port: i
 
                   elif m.find(b' ') == -1:
                       command: bytes = m
-                      execute_command(conn, port, cid, logs, get_version(), records, protocol, command)
+                      execute_command(conn, port, cid, num_conns, working_dir,
+                      logs, get_version(), records,
+                      protocol, start_time, command)
 
                   else:
                       command, params = tuple(m.split(b' ', 1))
-                      execute_command(conn, port, cid, logs, get_version(),
-                      records, protocol, command, params)
+                      execute_command(conn, port, cid, num_conns, working_dir,
+                      logs, get_version(), records,
+                      protocol, start_time, command, params)
 
           else:
               print('Closing connection to client: {}'.format(conn.getpeername()))
+              Connections().drop(conn.getpeername())
               sel.unregister(conn)
               conn.close()
 
@@ -431,7 +440,8 @@ def main(args: list[str]) -> None:
                 events: list = sel.select()
                 for key, _ in events:
                     callback = key.data
-                    callback(key.fileobj, logs, records, protocol, port)
+                    callback(key.fileobj, working_dir, logs,
+                    records, protocol, port, start_time)
 
     except OSError as e:
         print_gray('Is another server running on port {}?'.format(port), colors)

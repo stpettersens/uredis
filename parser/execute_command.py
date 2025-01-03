@@ -3,17 +3,19 @@
 import socket
 import math
 import logging
+
 from typing import TypeAlias
+from datetime import datetime
 
 from server_pkg.logs import Logs
-from resp.resp_commands import RespCommands
-from redis.redis_record import RedisRecord
-from redis.redis_records import RedisRecords
 from redis.redis_error import RedisError
 from redis.redis_hello import RedisHello
 from redis.redis_info import RedisInfo
 from redis.redis_ping import RedisPing
 from redis.redis_echo import RedisEcho
+from redis.redis_record import RedisRecord
+from redis.redis_records import RedisRecords
+from resp.resp_commands import RespCommands
 
 Socket: TypeAlias = socket.socket
 
@@ -28,7 +30,8 @@ def print_log(message: str|bytes, logs: Logs, request: bool = False) -> None:
     msg += str(message)
     logging.info(msg.strip())
 
-def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str, records: RedisRecords, protocol: int, command: bytes, params: bytes = b'') -> None:
+def execute_command(conn: Socket, port: int, cid: int, num_conns: int,
+working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int, start_time: datetime, command: bytes, params: bytes = b'') -> None:
     if params == b'':
         print_log('Client {} sent request: {}'
         .format(conn.getpeername(), command.decode('utf-8')), logs, True)
@@ -56,7 +59,7 @@ def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str,
             conn.send(hello.get())
 
     elif command == b'INFO':
-        info = RedisInfo(version, port)
+        info = RedisInfo(working_dir, version, num_conns, port, start_time)
         if len(params) == 0:
             print_log(info.get(), logs)
             conn.send(info.get())
@@ -123,7 +126,7 @@ def execute_command(conn: Socket, port: int, cid: int, logs: Logs, version: str,
                     conn.send(record.ok())
 
                 except ValueError as message:
-                    error = RedisError(message)
+                    error = RedisError(str(message))
                     print_log(error.get(), logs)
                     conn.send(error.get())
 
