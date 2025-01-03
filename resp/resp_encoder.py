@@ -3,9 +3,9 @@
 from resp.resp_commands import RespCommands
 
 class RespEncoder:
-    def __init__(self, command: bytes) -> None:
+    def __init__(self, command: str) -> None:
         self.commands: list[str] = RespCommands().get()
-        self.command: bytes = command
+        self.command: str = command
 
     def encode(self) -> list[bytes]:
         encodeds: list[bytes] = []

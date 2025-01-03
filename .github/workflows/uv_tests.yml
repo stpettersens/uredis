@@ -20,11 +20,11 @@ jobs:
       - name: Set up python
         run: uv python install
 
-      - name: Create venv (uv)
-        run: uv venv
+        #- name: Create venv (uv)
+        #  run: uv venv
 
-      - name: Install project testing dependencies (uv)
-        run: uv pip sync requirements.txt
+        #- name: Install project testing dependencies (uv)
+        #run: uv pip sync requirements.txt
 
       - name: Test the parser
         run: make test_parser

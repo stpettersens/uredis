@@ -26,7 +26,7 @@ class RespDecoder:
             return (self.response[1:].strip(), RespType.NUMBER)
 
         elif self.response[0] == '*':
-            out: list[str] = []
+            out = []
             keys: list[str] = self.response.split('\r\n')
             keys.pop(0)
             n: int = 1
@@ -50,9 +50,9 @@ class RespDecoder:
             return ('\r\n'.join(out), RespType.KEYS)
 
         elif self.response[0] == '%':
-            out: list[str] = []
+            out = []
             _keys: list[str] = []
-            keys: list[str] = self.response.split('\r\n')
+            keys = self.response.split('\r\n')
             keys.pop(0)
             for k in keys:
                 if k.startswith('$'):
@@ -60,7 +60,7 @@ class RespDecoder:
                 else:
                     _keys.append(k)
 
-            n: int = 1
+            n = 1
             for nn in count(start=0, step=2):
                 if (nn + 1) == len(_keys):
                     break
