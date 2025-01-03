@@ -102,6 +102,9 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
         elif _type == RespType.KEYVALS:
             print_gray(response, colors, pattern='=>')
 
+        elif _type == RespType.EMPTY:
+            print_red('Response was empty. :(', colors)
+
         else:
             print(response)
 
