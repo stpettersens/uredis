@@ -16,6 +16,7 @@ from redis.redis_echo import RedisEcho
 from redis.redis_record import RedisRecord
 from redis.redis_records import RedisRecords
 from resp.resp_commands import RespCommands
+from server_pkg.connections import Connections
 
 Socket: TypeAlias = socket.socket
 
@@ -47,6 +48,12 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
         error = RedisError("unknown '{}' command".format(str_params.lower()))
         print_log(error.get(), logs)
         conn.send(error.get())
+
+    elif command == b'_get_conn':
+        ckey: str = Connections().key(conn.getpeername())
+        cid: int = Connections().get(conn.getpeername())
+        print_log(ckey + '\r\n', logs)
+        conn.send(str.encode(ckey + '\r\n'))
 
     elif command == b'HELLO':
         if len(params) == 0:

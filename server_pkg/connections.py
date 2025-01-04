@@ -10,6 +10,9 @@ class Connections:
         self._cid: int = next(self.cid)
         self.cids[peer_name[1]] = self._cid
 
+    def key(self, peer_name: tuple[str, str]) -> str:
+        return f'{peer_name[0]}:{peer_name[1]}'
+
     def get(self, peer_name: tuple[str, str]) -> int:
         return self.cids[peer_name[1]]
 

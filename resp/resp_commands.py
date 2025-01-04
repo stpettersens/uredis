@@ -4,8 +4,9 @@
 class RespCommands:
     def get(self) -> list[str]:
         return [
+            '_get_conn', # since v0.2.0
             'HELLO',
-            'INFO', # since v0.2.0
+            'INFO',      # since v0.2.0
             'CLIENT',
             'PING',
             'ECHO',

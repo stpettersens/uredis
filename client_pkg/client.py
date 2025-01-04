@@ -62,7 +62,13 @@ def format_resp(cmd: bytes) -> str:
     return cmd.decode('utf-8').replace('\r', '<CR>').replace('\n', '<LF>')
 
 def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_resp: bool) -> None:
-    if command.upper() == 'EXIT':
+    if command == '_get_conn':
+        print('sent _get_conn')
+        s.send(b'_get_conn\r\n')
+        print(s.recv(1024))
+        return
+
+    elif command.upper() == 'EXIT':
         s.shutdown(socket.SHUT_RD)
         s.close()
         sys.exit(0)
@@ -149,6 +155,7 @@ def main(args: list[str]) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
             display_header(no_prompt=False, colors=colors)
+            execute('_get_conn', s, host, port, colors, show_resp)
 
             while True:
                 command: str = input('{}:{}> '.format(host, port))
