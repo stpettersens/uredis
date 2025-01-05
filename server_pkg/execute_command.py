@@ -48,12 +48,23 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
         error = RedisError("unknown '{}' command".format(str_params.lower()))
         print_log(error.get(), logs)
         conn.send(error.get())
+        return
 
-    elif command == b'_get_conn':
-        ckey: str = Connections().key(conn.getpeername())
-        cid: int = Connections().get(conn.getpeername())
-        print_log(ckey + '\r\n', logs)
-        conn.send(str.encode(ckey + '\r\n'))
+    match command:
+        case b'_GET_CONN':
+            bytes_key: bytes = Connections().as_bytes(conn.getpeername())
+            print_log(bytes_key, logs)
+            conn.send(bytes_key)
+
+    if command == b'_DROP_CONN':
+        if len(params) == 0:
+            error = RedisError("wrong number of arguments for '_drop_conn' command")
+            print_log(error.get(), logs)
+            conn.send(error.get())
+        else:
+            conn_key: tuple[str, str] = Connections().from_bytes(params)
+            print(Connections().all())
+            Connections().drop(conn_key)
 
     elif command == b'HELLO':
         if len(params) == 0:

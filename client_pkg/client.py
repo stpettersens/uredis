@@ -20,6 +20,7 @@ from resp.resp_encoder import RespEncoder
 from resp.resp_decoder import RespDecoder
 
 Socket: TypeAlias = socket.socket
+g_conn: bytes = b''
 
 def get_version() -> str:
     version: str = '0.2.0'
@@ -61,26 +62,35 @@ def display_usage(exit_code: int) -> int:
 def format_resp(cmd: bytes) -> str:
     return cmd.decode('utf-8').replace('\r', '<CR>').replace('\n', '<LF>')
 
+def get_conn(s: Socket) -> None:
+    s.send(b'_GET_CONN\r\n')
+    global g_conn
+    g_conn = s.recv(1024)
+    print(g_conn)
+
+def drop_conn(s: Socket) -> None:
+    global g_conn
+    s.send((b'_DROP_CONN ' + g_conn))
+
+def exit_client(s: Socket) -> None:
+    drop_conn(s)
+    s.shutdown(socket.SHUT_RD)
+    s.close()
+    sys.exit(0)
+
 def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_resp: bool) -> None:
-    if command == '_get_conn':
-        print('sent _get_conn')
-        s.send(b'_get_conn\r\n')
-        print(s.recv(1024))
-        return
-
-    elif command.upper() == 'EXIT':
-        s.shutdown(socket.SHUT_RD)
-        s.close()
-        sys.exit(0)
-
-    elif command.upper() == 'CLS' or command.upper() == 'CLEAR':
+    if command.upper() == 'CLS' or command.upper() == 'CLEAR':
         clear_screen()
         return
 
-    elif command.upper() == 'HELP':
-        clear_screen()
-        display_header(no_prompt=False, colors=colors)
-        return
+    match command.upper():
+        case 'EXIT':
+            exit_client(s)
+
+        case 'HELP':
+            clear_screen()
+            display_header(no_prompt=False, colors=colors)
+            return
 
     encoder = RespEncoder(command)
     for cmd in encoder.encode():
@@ -155,7 +165,7 @@ def main(args: list[str]) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
             display_header(no_prompt=False, colors=colors)
-            execute('_get_conn', s, host, port, colors, show_resp)
+            get_conn(s)
 
             while True:
                 command: str = input('{}:{}> '.format(host, port))
@@ -168,6 +178,7 @@ def main(args: list[str]) -> None:
         sys.exit(-1)
 
     except KeyboardInterrupt:
+        exit_client(s)
         sys.exit(0)
 
 if __name__ == "__main__":

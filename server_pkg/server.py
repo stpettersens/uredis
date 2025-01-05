@@ -28,12 +28,12 @@ from parser.resp_parser import Parser
 from server_pkg.exit_params import ExitParams
 from server_pkg.connections import Connections
 from redis.redis_records import RedisRecords
-from parser.execute_command import execute_command
+from server_pkg.execute_command import execute_command
 from colors.print_colors import print_green, print_gray
 from detection.detection import is_windows, get_platform, get_arch
 
 Socket: TypeAlias = socket.socket
-sel = selectors.DefaultSelector()
+g_sel = selectors.DefaultSelector()
 
 def validate_ip_v4(ip: str) -> bool:
     if ip.strip() == '0.0.0.0': # Bind all is allowable.
@@ -189,7 +189,7 @@ protocol: int, port: int, start_time: datetime) -> None:
       cid: int = Connections().get(conn.getpeername())
       print('Connected to client {} (#{})'.format(addr, cid))
       conn.setblocking(True)
-      sel.register(conn, selectors.EVENT_READ, read)
+      g_sel.register(conn, selectors.EVENT_READ, read)
 
 def read(conn: Socket, working_dir: str, logs: Logs, records: RedisRecords,
 protocol: int, port: int, start_time: datetime) -> None:
@@ -239,7 +239,7 @@ protocol: int, port: int, start_time: datetime) -> None:
           else:
               print('Closing connection to client: {}'.format(conn.getpeername()))
               Connections().drop(conn.getpeername())
-              sel.unregister(conn)
+              g_sel.unregister(conn)
               conn.close()
 
 # !!!
@@ -434,10 +434,10 @@ def main(args: list[str]) -> None:
             s.bind((host, port))
             s.listen()
             s.setblocking(True)
-            sel.register(s, selectors.EVENT_READ, accept)
+            g_sel.register(s, selectors.EVENT_READ, accept)
 
             while True:
-                events: list = sel.select()
+                events: list = g_sel.select()
                 for key, _ in events:
                     callback = key.data
                     callback(key.fileobj, working_dir, logs,

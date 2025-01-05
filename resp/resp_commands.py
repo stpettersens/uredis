@@ -1,12 +1,12 @@
 # $server:client
 
-# Supported commands are listed below:
+# Supported commands are listed below.
+# Non-standard Redis commands begin with an underscore ('_'):
 class RespCommands:
     def get(self) -> list[str]:
         return [
-            '_get_conn', # since v0.2.0
             'HELLO',
-            'INFO',      # since v0.2.0
+            'INFO',         # since v0.2.0
             'CLIENT',
             'PING',
             'ECHO',
@@ -16,5 +16,7 @@ class RespCommands:
             'DEL',
             'FLUSHDB',
             'FLUSHALL',
-            'KEYS'
+            'KEYS',
+            '_GET_CONN',    # since v0.2.0
+            '_DROP_CONN'    # since v0.2.0
         ]

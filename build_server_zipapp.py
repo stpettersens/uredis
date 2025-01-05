@@ -10,6 +10,7 @@ if __name__ == "__main__":
         'server_pkg',
         'server_pkg',
         'server_pkg',
+        'server_pkg',
         'colors',
         'resp',
         'detection',
@@ -23,7 +24,6 @@ if __name__ == "__main__":
         'redis',
         'tokenizer',
         'tokenizer',
-        'parser',
         'parser'
     ]
 
@@ -31,6 +31,7 @@ if __name__ == "__main__":
         os.path.join('server_pkg', 'server.py'),
         os.path.join('server_pkg', 'connections.py'),
         os.path.join('server_pkg', 'exit_params.py'),
+        os.path.join('server_pkg', 'execute_command.py'),
         os.path.join('server_pkg', 'logs.py'),
         os.path.join('colors', 'print_colors.py'),
         os.path.join('resp', 'resp_commands.py'),
@@ -45,8 +46,7 @@ if __name__ == "__main__":
         os.path.join('redis', 'redis_records.py'),
         os.path.join('tokenizer', 'resp_token.py'),
         os.path.join('tokenizer', 'resp_tokenizer.py'),
-        os.path.join('parser', 'resp_parser.py'),
-        os.path.join('parser', 'execute_command.py')
+        os.path.join('parser', 'resp_parser.py')
     ]
 
     try:
