@@ -40,6 +40,11 @@ class RedisRecords:
         else:
             return self.records[str(key)]
 
+    def delete_db_records(self, db: bytes) -> bytes:
+        # TODO: In the future this will only flush the specific db.a
+        # For now, invoke delete_all_records.
+        return self.delete_all_records()
+
     def delete_all_records(self) -> bytes:
         self._update_uuid()
         self.records = {}

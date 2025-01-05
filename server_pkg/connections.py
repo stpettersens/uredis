@@ -4,11 +4,11 @@ from itertools import count
 
 class Connections:
     cid = count(1)
-    cids: dict[str, int] = {}
+    cids: dict[int, int] = {}
 
     def set(self, peer_name: tuple[str, str]) -> None:
         self._cid: int = next(self.cid)
-        self.cids[peer_name[1]] = self._cid
+        self.cids[int(peer_name[1])] = self._cid
 
     def as_bytes(self, peer_name: tuple[str, str]) -> bytes:
         return str.encode(f'{peer_name[0]}:{peer_name[1]}\r\n')
@@ -19,19 +19,19 @@ class Connections:
         return (kv[0], kv[1])
 
     def get(self, peer_name: tuple[str, str]) -> int:
-        return self.cids[peer_name[1]]
+        return self.cids[int(peer_name[1])]
 
-    def drop(self, peer_name: tuple[str, str]) -> None:
+    def drop(self, peer_name: tuple[str, str]) -> str:
         self.cids[int(peer_name[1])] = 0
-        print(self.cids)
+        return f"Dropped connection {peer_name[1]}."
 
     def get_count(self) -> int:
-        conns = 0
-        for k, v in self.cids:
-            if v != 0:
+        conns: int = 0
+        for v in self.cids.values():
+            if int(v) > 0:
                 conns += 1
 
         return conns
 
-    def all(self) -> dict[str, int]:
+    def all(self) -> dict[int, int]:
         return self.cids

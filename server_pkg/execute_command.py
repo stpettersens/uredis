@@ -56,152 +56,157 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
             print_log(bytes_key, logs)
             conn.send(bytes_key)
 
-    if command == b'_DROP_CONN':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for '_drop_conn' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            conn_key: tuple[str, str] = Connections().from_bytes(params)
-            print(Connections().all())
-            Connections().drop(conn_key)
+        case b'_DROP_CONN':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for '_drop_conn' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                conn_key: tuple[str, str] = Connections().from_bytes(params)
+                dropped: str = Connections().drop(conn_key)
+                print_log(dropped, logs)
+                print(dropped)
 
-    elif command == b'HELLO':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'hello' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            hello = RedisHello(params, cid, version)
-            print_log(hello.get(), logs)
-            conn.send(hello.get())
+        case b'HELLO':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'hello' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                hello = RedisHello(params, cid, version)
+                print_log(hello.get(), logs)
+                conn.send(hello.get())
 
-    elif command == b'INFO':
-        info = RedisInfo(working_dir, version, num_conns, port, start_time)
-        if len(params) == 0:
-            print_log(info.get(), logs)
-            conn.send(info.get())
-        else:
-            print_log(info.get(params), logs)
-            conn.send(info.get(params))
+        case b'INFO':
+            info = RedisInfo(working_dir, version, num_conns, port, start_time)
+            if len(params) == 0:
+                print_log(info.get(), logs)
+                conn.send(info.get())
+            else:
+                print_log(info.get(params), logs)
+                conn.send(info.get(params))
 
-    elif command == b'CLIENT':
-        print_log(b'+OK\r\n', logs)
-        conn.send(b'+OK\r\n')
+        case b'CLIENT':
+            print_log(b'+OK\r\n', logs)
+            conn.send(b'+OK\r\n')
 
-    elif command == b'PING':
-        pong = RedisPing(params)
-        print_log(pong.get(), logs)
-        conn.send(pong.get())
+        case b'PING':
+            pong = RedisPing(params)
+            print_log(pong.get(), logs)
+            conn.send(pong.get())
 
-    elif command == b'ECHO':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'echo' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            echo = RedisEcho(params)
-            print_log(echo.get(), logs)
-            conn.send(echo.get())
+        case b'ECHO':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'echo' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                echo = RedisEcho(params)
+                print_log(echo.get(), logs)
+                conn.send(echo.get())
 
-    elif command == b'SET':
-        if len(params) < 2:
-            error = RedisError("wrong number of arguments for 'set' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            p = params.split()
-            if len(p) == 2:
-                record = RedisRecord(p[1])
-
-                # !!!
-                import sys
-                print('Record is {} bytes.'.format(sys.getsizeof(record)))
-                # !!!
-
-                records.push_record(p[0], record)
-                print_log(record.ok(), logs)
-                conn.send(record.ok())
-
-            elif len(p) == 4:
-                try:
-                    ttl: int = abs(math.ceil(int(p[3])))
-                    if ttl <= 0:
-                        raise ValueError("ttl must be a + integer value in seconds or milliseconds")
-
-                    if p[2].upper() == b'EX': # TTL seconds
-                        pass
-
-                    elif p[2].upper() == b'PX': # TTL milliseconds
-                        ttl = int((ttl / 1000))
-
-                    else:
-                        raise ValueError("ttl must be 'ex' (seconds) or 'px' (milliseconds)")
-
-                    record = RedisRecord(p[1], ttl)
+        case b'SET':
+            if len(params) < 2:
+                err = RedisError("wrong number of arguments for 'set' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                p = params.split()
+                if len(p) == 2:
+                    record = RedisRecord(p[1])
                     records.push_record(p[0], record)
                     print_log(record.ok(), logs)
                     conn.send(record.ok())
 
-                except ValueError as message:
-                    error = RedisError(str(message))
-                    print_log(error.get(), logs)
-                    conn.send(error.get())
+                elif len(p) == 4:
+                    try:
+                        ttl: int = abs(math.ceil(int(p[3])))
+                        if ttl <= 0:
+                            raise ValueError("ttl must be a + integer value in seconds or milliseconds")
 
-    elif command == b'GET':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'get' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            record = records.get_record(params.split()[0])
-            if record.is_dummy():
-                if protocol == 2:
-                    print_log(b'$0\r\n\r\n', logs)
-                    conn.send(b'$0\r\n\r\n')
+                        if p[2].upper() == b'EX': # TTL seconds
+                            pass
 
-                elif protocol == 3:
-                    print_log(b'_\r\n', logs)
-                    conn.send(b'_\r\n')
+                        elif p[2].upper() == b'PX': # TTL milliseconds
+                            ttl = int((ttl / 1000))
+
+                        else:
+                            raise ValueError("ttl must be 'ex' (seconds) or 'px' (milliseconds)")
+
+                        record = RedisRecord(p[1], ttl)
+                        records.push_record(p[0], record)
+                        print_log(record.ok(), logs)
+                        conn.send(record.ok())
+
+                    except ValueError as message:
+                        err = RedisError(str(message))
+                        print_log(err.get(), logs)
+                        conn.send(err.get())
+
+        case b'GET':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'get' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
             else:
-                print_log(record.get(), logs)
-                conn.send(record.get())
+                record = records.get_record(params.split()[0])
+                if record.is_dummy():
+                    if protocol == 2:
+                        print_log(b'$0\r\n\r\n', logs)
+                        conn.send(b'$0\r\n\r\n')
 
-    elif command == b'TTL':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'ttl' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            record = records.get_record(params.split()[0])
-            if record.is_dummy():
-                print_log('b:-2\r\n', logs)
-                conn.send(b':-2\r\n')
+                    elif protocol == 3:
+                        print_log(b'_\r\n', logs)
+                        conn.send(b'_\r\n')
+                else:
+                    print_log(record.get(), logs)
+                    conn.send(record.get())
+
+        case b'TTL':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'ttl' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
             else:
-                ttl_bytes: bytes = record.get_ttl_as_bytes()
-                print_log(ttl_bytes, logs)
-                conn.send(ttl_bytes)
+                record = records.get_record(params.split()[0])
+                if record.is_dummy():
+                    print_log('b:-2\r\n', logs)
+                    conn.send(b':-2\r\n')
+                else:
+                    ttl_bytes: bytes = record.get_ttl_as_bytes()
+                    print_log(ttl_bytes, logs)
+                    conn.send(ttl_bytes)
 
-    elif command == b'DEL':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'del' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        else:
-            deleted: bytes = records.delete_record(params.split()[0])
-            print_log(deleted, logs)
-            conn.send(deleted)
+        case b'DEL':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'del' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                deleted: bytes = records.delete_record(params.split()[0])
+                print_log(deleted, logs)
+                conn.send(deleted)
 
-    elif command == b'FLUSHDB' or command == b'FLUSHALL':
-        deleted_flush: bytes = records.delete_all_records()
-        print_log(deleted_flush, logs)
-        conn.send(deleted_flush)
+        case b'FLUSHDB':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'flushdb' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                deleted_db: bytes = records.delete_db_records(params)
+                print_log(deleted_db, logs)
+                conn.send(deleted_db)
 
-    elif command == b'KEYS':
-        if len(params) == 0:
-            error = RedisError("wrong number of arguments for 'keys' command")
-            print_log(error.get(), logs)
-            conn.send(error.get())
-        elif params == b'*':
-            print_log(records.get_keys_as_bytes(), logs)
-            conn.send(records.get_keys_as_bytes())
+        case b'FLUSHALL':
+            deleted_all: bytes = records.delete_all_records()
+            print_log(deleted_all, logs)
+            conn.send(deleted_all)
+
+        case b'KEYS':
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'keys' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            elif params == b'*':
+                print_log(records.get_keys_as_bytes(), logs)
+                conn.send(records.get_keys_as_bytes())
