@@ -103,26 +103,31 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
         s.send(cmd)
         response, _type = RespDecoder(s.recv(1024), cmd).decode()
 
-        if _type == RespType.STATUS:
-            print_green(response, colors)
+        match _type:
+            case RespType.STATUS:
+                print_green(response, colors)
 
-        elif _type == RespType.ERROR:
-            print_red(response, colors)
+            case RespType.ERROR:
+                print_red(response, colors)
 
-        elif _type == RespType.NUMBER:
-            print_magenta(response, colors)
+            case RespType.NUMBER:
+                print_magenta(response, colors)
 
-        elif _type == RespType.KEYS:
-            print_gray(response, colors, pattern=')')
+            case RespType.KEYS:
+                print_gray(response, colors, pattern=')')
 
-        elif _type == RespType.KEYVALS:
-            print_gray(response, colors, pattern='=>')
+            case RespType.KEYVALS:
+                print_gray(response, colors, pattern='=>')
 
-        elif _type == RespType.EMPTY:
-            print_red('Response was empty. :(', colors)
+            case RespType.SHOULD_NOT_SEND:
+                print_red('This command should not be sent by users.', colors)
 
-        else:
-            print(response)
+            case RespType.EMPTY:
+                # We should never get this response.
+                print_red('Response was empty. :(', colors)
+
+            case _:
+                print(response)
 
 def main(args: list[str]) -> None:
     host: str = '127.0.0.1'

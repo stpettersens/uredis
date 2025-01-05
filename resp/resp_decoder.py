@@ -10,7 +10,13 @@ class RespDecoder:
         self.command: str = command.decode('utf-8')
 
     def decode(self) -> tuple[str, RespType]:
-        if self.command.find('INFO') != -1:
+        if self.command.find('_GET_CONN') != -1:
+            return ('', RespType.SHOULD_NOT_SEND)
+
+        elif self.command.find('_DROP_CONN') != -1:
+            return ('', RespType.SHOULD_NOT_SEND)
+
+        elif self.command.find('INFO') != -1:
             out: list[str] = self.response.split('\r\n')
             out.pop(0)
             return ('\r\n'.join(out), RespType.INFO)

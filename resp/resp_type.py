@@ -11,3 +11,4 @@ class RespType(Enum):
     KEYVALS = 4
     STRING = 5
     INFO = 6
+    SHOULD_NOT_SEND = 7
