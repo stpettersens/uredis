@@ -120,7 +120,8 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
                 print_gray(response, colors, pattern='=>')
 
             case RespType.SHOULD_NOT_SEND:
-                print_red('This command should not be sent by users.', colors)
+                print_red("The command '{}' should not be sent by users."
+                .format(response), colors)
 
             case RespType.EMPTY:
                 # We should never get this response.
