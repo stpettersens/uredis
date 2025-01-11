@@ -9,7 +9,6 @@
 import os
 import re
 import sys
-import signal
 import getopt
 import socket
 import pickle
@@ -30,10 +29,12 @@ from server_pkg.connections import Connections
 from redis.redis_records import RedisRecords
 from server_pkg.execute_command import execute_command
 from colors.print_colors import print_green, print_gray
-from detection.detection import is_windows, get_platform, get_arch
+from detection.detection import get_platform, get_arch
 
 Socket: TypeAlias = socket.socket
-g_sel = selectors.DefaultSelector()
+Selector: TypeAlias = selectors.SelectSelector
+
+g_sel: Selector = selectors.DefaultSelector()
 
 def validate_ip_v4(ip: str) -> bool:
     if ip.strip() == '0.0.0.0': # Bind all is allowable.
@@ -242,12 +243,6 @@ protocol: int, port: int, start_time: datetime) -> None:
               g_sel.unregister(conn)
               conn.close()
 
-# !!!
-def foo(signum, frame) -> None:
-    print('Received signal:')
-    print(signum)
-    sys.exit(0)
-
 def exit_server(ep: ExitParams) -> None:
     ep.stop_event.set() # Stop thread(s)
     sleep(3)
@@ -276,11 +271,6 @@ def main(args: list[str]) -> None:
     max_size: int = -1
 
     start_time: datetime = datetime.now()
-
-    if is_windows():
-        pass
-        #signal.signal(signal.SIGBREAK, foo)
-        #signal.raise_signal(signal.SIGBREAK) # !!!
 
     try:
         opts, args = getopt.getopt(args, "hvb:p:x:d:l:numcr:z:si",

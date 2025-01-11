@@ -2,12 +2,11 @@
 
 import os
 import sys
-import resource
 
 from time import time
 from datetime import datetime, timedelta
 
-from detection.detection import get_os, get_arch_bits
+from detection.detection import get_os, get_arch_bits, is_unix_like
 
 def calculate_up_time(start_time: datetime) -> timedelta:
     return (datetime.now() - start_time)
@@ -50,7 +49,10 @@ class RedisInfo:
         return str.encode(sections)
 
     def get_memory_section(self) -> str:
-        memory_kb: int = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_kb: int = 0
+        if is_unix_like():
+            import resource
+            memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
         return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\n""".format((memory_kb * 1000), memory_kb, (memory_kb * 1000), (memory_kb / 1000))
 

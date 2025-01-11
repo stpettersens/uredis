@@ -20,6 +20,7 @@ from resp.resp_encoder import RespEncoder
 from resp.resp_decoder import RespDecoder
 
 Socket: TypeAlias = socket.socket
+
 g_conn: bytes = b''
 
 def get_version() -> str:
@@ -66,7 +67,10 @@ def get_conn(s: Socket) -> None:
     s.send(b'_GET_CONN\r\n')
     global g_conn
     g_conn = s.recv(1024)
-    print(g_conn)
+
+def print_conn() -> None:
+    print('Connection is {}.'.format(g_conn.decode('utf-8').strip()))
+    print()
 
 def drop_conn(s: Socket) -> None:
     global g_conn
@@ -172,6 +176,7 @@ def main(args: list[str]) -> None:
             s.connect((host, port))
             display_header(no_prompt=False, colors=colors)
             get_conn(s)
+            print_conn()
 
             while True:
                 command: str = input('{}:{}> '.format(host, port))
