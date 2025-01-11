@@ -32,9 +32,9 @@ from colors.print_colors import print_green, print_gray
 from detection.detection import get_platform, get_arch
 
 Socket: TypeAlias = socket.socket
-Selector: TypeAlias = selectors.SelectSelector
+DefaultSelector: TypeAlias = selectors.DefaultSelector
 
-g_sel: Selector = selectors.DefaultSelector()
+g_sel: DefaultSelector = selectors.DefaultSelector()
 
 def validate_ip_v4(ip: str) -> bool:
     if ip.strip() == '0.0.0.0': # Bind all is allowable.
