@@ -62,7 +62,6 @@ mem_bytes = get_memory_bytes()"""
             exec(unix_memory, captured)
             memory_bytes = captured['mem_bytes']
 
-
         elif is_windows():
 # On Windows, the psuil module is an optional dependency so that we get process memory usage in INFO.
 # Otherwise, we just return 0 for process memory in bytes.
