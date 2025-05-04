@@ -6,7 +6,7 @@ import sys
 from time import time
 from datetime import datetime, timedelta
 
-from detection.detection import get_os, get_arch_bits, is_unix_like
+from detection.detection import get_os, get_arch_bits, is_unix_like, is_windows
 
 def calculate_up_time(start_time: datetime) -> timedelta:
     return (datetime.now() - start_time)
@@ -49,12 +49,43 @@ class RedisInfo:
         return str.encode(sections)
 
     def get_memory_section(self) -> str:
-        memory_kb: int = 0
+        memory_bytes: int = 0
+        captured: dict[str, int] = {}
         if is_unix_like():
-            import resource
-            memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            unix_memory = """
+import resource
+def get_memory_bytes() -> int:
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
-        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\n""".format((memory_kb * 1000), memory_kb, (memory_kb * 1000), (memory_kb / 1000))
+mem_bytes = get_memory_bytes()"""
+
+            exec(unix_memory, captured)
+            memory_bytes = captured['mem_bytes']
+
+
+        elif is_windows():
+# On Windows, the psuil module is an optional dependency so that we get process memory usage in INFO.
+# Otherwise, we just return 0 for process memory in bytes.
+            win_memory = """
+import os
+try:
+    import psutil
+except:
+    pass
+
+def get_memory_bytes() -> int:
+    try:
+        process = psutil.Process(os.getpid())
+        return process.memory_info().rss
+    except:
+        return 0
+
+mem_bytes = get_memory_bytes()"""
+
+            exec(win_memory, captured)
+            memory_bytes = captured['mem_bytes']
+
+        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\n""".format((memory_bytes * 1000), memory_bytes, (memory_bytes * 1000), (memory_bytes / 1000))
 
     def get_clients_section(self) -> str:
         return """# Clients\r\nconnected_clients:{}\r\ncluster_connections:0\r\nmaxclients:10000\r\nclient_recent_max_input_buffer:0\r\nclient_recent_max_output_buffer:0\r\nblocked_clients:0\r\ntracking_clients:0\r\nclients_in_timeout_table:0""".format(self.num_conns)

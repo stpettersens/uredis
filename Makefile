@@ -1,55 +1,41 @@
-PYTHON=$(shell ./detect_py)
-make: server client
+make: server
 
-# For inside venv.
+win_deps:
+	uv venv
+	uv pip install -r requirements.win.txt
+
 check_client:
 	uvx mypy client__main__.py
-	@echo
 
 check_server:
 	uvx mypy server__main__.py
-	@echo
 
 build_client:
-	python3 build_server_zipapp.pya
-	@echo
+	uv run python build_server_zipapp.py
 
 build_server:
-	python3 build_client_zipapp.py
-	@echo
+	uv run python build_client_zipapp.py
 
 test_parser:
-	python3 test_parser.py
-	@echo
+	uv run python test_parser.py
 
-# For outside venv.
-init:
-	@echo "Looking for Python interpreter:"
-	@echo $(PYTHON)
-	@echo
+server:
+	uv run python server__main__.py
 
-server: init
-	$(PYTHON) build_server_zipapp.py
-	@echo
+client:
+	uv run python client__main__.py
 
-client: init
-	$(PYTHON) build_client_zipapp.py
-	@echo
+built_server:
+	uv run python uredis-server.pyz
 
-test: init
-	$(PYTHON) test_parser.py
-	@echo
+built_client:
+	uv run python uredis-client.pyz
 
-run_server: init
-	$(PYTHON) server__main__.py
-
-run_client: init
-	$(PYTHON) client__main__.py
+test: test_parser
 
 docker:
-	$(PYTHON) build_docker_image.py
-	@echo
+	uv run python build_docker_image.py
 
 clean:
 	@echo Cleaning PYZ for server and client...
-	rm -f *.pyz
+	uv run python clear_pyz.py

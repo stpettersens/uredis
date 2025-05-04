@@ -1,0 +1,2 @@
+# This is an optional dependency to get memory usage with the INFO command on Window systems:
+psutil
