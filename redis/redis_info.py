@@ -101,11 +101,11 @@ mem_peak = get_peak_memory_bytes()"""
             mem_bytes = captured['mem_bytes']
             mem_peak = captured['mem_peak']
 
-        memory_kb: int = (mem_bytes / 1024) if mem_bytes != 0 else 0
-        memory_mb: int = (mem_bytes / (1024 * 1024)) if mem_bytes != 0 else 0
+        memory_kb: float = (mem_bytes / 1024) if mem_bytes != 0 else 0
+        memory_mb: float = (mem_bytes / (1024 * 1024)) if mem_bytes != 0 else 0
 
-        mem_peak_mb: int = (mem_peak / (1024 * 1024)) if mem_bytes != 0 else 0
-        mem_peak_percent: int = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 else 0
+        mem_peak_mb: float = (mem_peak / (1024 * 1024)) if mem_bytes != 0 else 0
+        mem_peak_percent: float = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 else 0
 
         return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\nused_memory_peak:{}\r\nused_memory_peak_human:{}M\r\nused_memory_peak_perc:{}%""".format(mem_bytes, f"{memory_kb:.2f}", mem_bytes, f"{memory_mb:.2f}", mem_peak, f"{mem_peak_mb:.2f}", f"{mem_peak_percent:.2f}")
 
