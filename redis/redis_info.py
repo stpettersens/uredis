@@ -45,7 +45,7 @@ class RedisInfo:
 
     def get_all_sections(self) -> bytes:
         #$5260
-        sections: str = '$10000\r\n{}\r\n\r\n{}\r\n\r\n{}\r\n'.format(self.get_server_section(), self.get_clients_section(), self.get_memory_section())
+        sections: str = '$20000\r\n{}\r\n\r\n{}\r\n\r\n{}\r\n'.format(self.get_server_section(), self.get_clients_section(), self.get_memory_section())
 
         return str.encode(sections)
 
@@ -107,7 +107,7 @@ mem_peak = get_peak_memory_bytes()"""
         mem_peak_mb: float = (mem_peak / (1024 * 1024)) if mem_bytes != 0 else 0
         mem_peak_percent: float = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 else 0
 
-        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\nused_memory_peak:{}\r\nused_memory_peak_human:{}M\r\nused_memory_peak_perc:{}%""".format(mem_bytes, f"{memory_kb:.2f}", mem_bytes, f"{memory_mb:.2f}", mem_peak, f"{mem_peak_mb:.2f}", f"{mem_peak_percent:.2f}")
+        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\nused_memory_peak:{}\r\nused_memory_peak_human:{}M\r\nused_memory_peak_perc:{}%\r\nused_memory_overhead:{}\r\nused_memory_startup:{}""".format(mem_bytes, f"{memory_kb:.2f}", mem_bytes, f"{memory_mb:.2f}", mem_peak, f"{mem_peak_mb:.2f}", f"{mem_peak_percent:.2f}", mem_bytes, mem_bytes)
 
     def get_clients_section(self) -> str:
         return """# Clients\r\nconnected_clients:{}\r\ncluster_connections:0\r\nmaxclients:10000\r\nclient_recent_max_input_buffer:0\r\nclient_recent_max_output_buffer:0\r\nblocked_clients:0\r\ntracking_clients:0\r\nclients_in_timeout_table:0""".format(self.num_conns)
