@@ -1,8 +1,12 @@
 make: server
 
-win_deps:
+opt_deps:
 	uv venv
-	uv pip install -r requirements.win.txt
+	uv pip install -r requirements.txt
+
+test_deps:
+	uv venv
+	uv pip install -r requirements.testing.txt
 
 check_client:
 	uvx mypy client__main__.py

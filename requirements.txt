@@ -1,5 +1,3 @@
-# uRedis server and client only uses Python's standard library.
-# These libraries are for testing static typing with mypy under venv.
-typing-extensions
-mypy-extensions
-mypy
+# This is an optional dependency to get memory usage with the INFO command on Window systems
+# or more accurate reporting on Linux/Unix:
+psutil
