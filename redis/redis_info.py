@@ -53,53 +53,45 @@ class RedisInfo:
         mem_bytes: int = 0
         mem_peak: int = 0
         captured: dict[str, int] = {}
-        if is_unix_like():
-            unix_memory = """
-import resource
 
-def get_memory_bytes() -> int:
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-def get_peak_memory_bytes() -> int:
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-mem_bytes = get_memory_bytes()
-mem_peak = get_peak_memory_bytes()"""
-
-            exec(unix_memory, captured)
-            mem_bytes = captured['mem_bytes']
-            mem_peak = captured['mem_peak']
-
-        elif is_windows():
-# On Windows, the psuil module is an optional dependency so that we get process memory usage in INFO.
-# Otherwise, we just return 0 for process memory in bytes.
-            win_memory = """
+# The psuil module is an optional dependency so that we get process memory usage in INFO.
+# Otherwise, we just return 0 for for memory usages in bytes.
+        memory_funcs = """
 import os
 try:
     import psutil
 except:
     pass
 
-def get_memory_bytes() -> int:
+def get_memory_bytes() -> float:
     try:
         process = psutil.Process(os.getpid())
         return process.memory_info().rss
     except:
         return 0
 
-def get_peak_memory_bytes() -> int:
+def get_peak_memory_bytes() -> float:
     try:
         process = psutil.Process(os.getpid())
         return process.memory_info().peak_wset
     except:
         return 0
 
-mem_bytes = get_memory_bytes()
-mem_peak = get_peak_memory_bytes()"""
+def get_system_memory_bytes() -> float:
+    try:
+        memory = psutil.virtual_memory()
+        return memory.total
+    except:
+        return 0
 
-            exec(win_memory, captured)
-            mem_bytes = captured['mem_bytes']
-            mem_peak = captured['mem_peak']
+mem_bytes = get_memory_bytes()
+mem_peak = get_peak_memory_bytes()
+tot_mem = get_system_memory_bytes()"""
+
+        exec(memory_funcs, captured)
+        mem_bytes = captured['mem_bytes']
+        mem_peak = captured['mem_peak']
+        tot_mem = captured['tot_mem']
 
         memory_kb: float = (mem_bytes / 1024) if mem_bytes != 0 else 0
         memory_mb: float = (mem_bytes / (1024 * 1024)) if mem_bytes != 0 else 0
@@ -107,7 +99,9 @@ mem_peak = get_peak_memory_bytes()"""
         mem_peak_mb: float = (mem_peak / (1024 * 1024)) if mem_bytes != 0 else 0
         mem_peak_percent: float = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 else 0
 
-        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\nused_memory_peak:{}\r\nused_memory_peak_human:{}M\r\nused_memory_peak_perc:{}%\r\nused_memory_overhead:{}\r\nused_memory_startup:{}""".format(mem_bytes, f"{memory_kb:.2f}", mem_bytes, f"{memory_mb:.2f}", mem_peak, f"{mem_peak_mb:.2f}", f"{mem_peak_percent:.2f}", mem_bytes, mem_bytes)
+        tot_mem_gb: float = (tot_mem / (1024 * 1024 * 1024)) if tot_mem != 0 else 0
+
+        return """# Memory\r\nused_memory:{}\r\nused_memory_human:{}K\r\nused_memory_rss:{}\r\nused_memory_rss_human:{}M\r\nused_memory_peak:{}\r\nused_memory_peak_human:{}M\r\nused_memory_peak_perc:{}%\r\nused_memory_overhead:{}\r\nused_memory_startup:{}\r\nused_memory_dataset:{}\r\nused_memory_dataset_perc:{}%\r\nallocator_allocated:0\r\nallocator_active:0\r\ntotal_system_memory:{}\r\ntotal_system_memory_human:{}G\r\nused_memory_lua:0\r\nused_memory_vm_eval:0\r\nused_memory_lua_human:0.00K\r\nused_memory_scripts_eval:0\r\n""".format(mem_bytes, f"{memory_kb:.2f}", mem_bytes, f"{memory_mb:.2f}", mem_peak, f"{mem_peak_mb:.2f}", f"{mem_peak_percent:.2f}", mem_bytes, mem_bytes, mem_bytes, f"{mem_peak_percent:.2f}", tot_mem, f"{tot_mem_gb:.2f}")
 
     def get_clients_section(self) -> str:
         return """# Clients\r\nconnected_clients:{}\r\ncluster_connections:0\r\nmaxclients:10000\r\nclient_recent_max_input_buffer:0\r\nclient_recent_max_output_buffer:0\r\nblocked_clients:0\r\ntracking_clients:0\r\nclients_in_timeout_table:0""".format(self.num_conns)
