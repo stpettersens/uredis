@@ -1,10 +1,10 @@
-### uredis
-> Redis compatible server and client implemented in Python mostly using only the standard library.+
+### uRedis
+> Redis compatible server and client implemented in Python.
 
 Latest version is v0.2.0 (WIP) and the following commands are implemented:
 
 * HELLO
-* INFO <<<
+* INFO +
 * CLIENT
 * PING
 * ECHO
@@ -19,5 +19,8 @@ Latest version is v0.2.0 (WIP) and the following commands are implemented:
 The only data type supported so far is strings, but this version
 is good enough to run my http://ip-locator.xyz application on FreeBSD.
 
-+ We mostly use only the Python standard library but the [psutil module](https://pypi.org/project/psutil)
-must be installed to return useful memory usage information with the INFO command. Otherwise, 0 bytes in process memory usage will be returned.
++ uRedis is mostly implemented using the [Python standard library](https://docs.python.org/3/library/index.html) but uses
+[psutil](https://pypi.org/project/psutil) and [Pymple](https://pypi.org/project/Pympler)
+for memory information with the INFO command.
+
+If you don't care about the INFO command, uRedis can be run without installing this dependencies.

@@ -1,5 +1,5 @@
-# uRedis server and client only uses Python's standard library.
 # These libraries are for testing static typing with mypy under venv.
+# They are not needed for the uRedis to run.
 typing-extensions
 mypy-extensions
 mypy

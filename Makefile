@@ -1,6 +1,6 @@
 make: server
 
-opt_deps:
+deps:
 	uv venv
 	uv pip install -r requirements.txt
 

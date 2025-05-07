@@ -1,2 +1,3 @@
-# This is an optional dependency to get memory usage with the INFO command on Window systems:
+# These is are optional, but recommended dependencies to get memory usage with the INFO command:
 psutil
+Pympler

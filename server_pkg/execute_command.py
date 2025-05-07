@@ -1,7 +1,8 @@
 # $server
 
-import socket
+import sys
 import math
+import socket
 import logging
 
 from typing import TypeAlias
@@ -78,7 +79,7 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
                 conn.send(hello.get())
 
         case b'INFO':
-            info = RedisInfo(working_dir, version, num_conns, port, start_time)
+            info = RedisInfo(working_dir, version, num_conns, port, start_time, records)
             if len(params) == 0:
                 print_log(info.get(), logs)
                 conn.send(info.get())
