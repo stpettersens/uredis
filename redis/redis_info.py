@@ -130,8 +130,8 @@ tot_mem: float = get_system_memory_bytes()"""
         memory_kb: float = (mem_bytes / 1024) if mem_bytes != 0 else 0
         memory_mb: float = (mem_bytes / (1024 * 1024)) if mem_bytes != 0 else 0
 
-        mem_peak_mb: float = (mem_peak / (1024 * 1024)) if mem_bytes != 0 else 0
-        mem_peak_percent: float = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 else 0
+        mem_peak_mb: float = (mem_peak / (1024 * 1024)) if mem_bytes != 0 and mem_peak != 0 else 0
+        mem_peak_percent: float = ((mem_bytes / mem_peak) * 100) if mem_bytes != 0 and mem_peak != 0 else 0
 
         tot_mem_gb: float = (tot_mem / (1024 * 1024 * 1024)) if tot_mem != 0 else 0
 
