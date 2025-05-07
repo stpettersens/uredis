@@ -44,12 +44,12 @@ def get_records_memory_bytes(records: RedisRecords) -> int:
 
     return sys.getsizeof(records)
 
-records_size = get_records_memory_bytes(records)"""
+records_size: int = get_records_memory_bytes(records)"""
 
         params: dict[str, RedisRecords] = { 'records': records }
         locals_scope = dict(params)
         exec(records_size_func, {}, locals_scope)
-        records_size: int = locals_scope['records_size']
+        records_size = locals_scope['records_size']
 
         self.records_bytes = records_size
         print(f"The size of the records is {self.records_bytes} bytes.") # !!!
@@ -118,9 +118,9 @@ def get_system_memory_bytes() -> float:
 
     return 0
 
-mem_bytes = get_memory_bytes()
-mem_peak = get_peak_memory_bytes()
-tot_mem = get_system_memory_bytes()"""
+mem_bytes: float = get_memory_bytes()
+mem_peak: float = get_peak_memory_bytes()
+tot_mem: float = get_system_memory_bytes()"""
 
         exec(memory_funcs, captured)
         mem_bytes = captured['mem_bytes']
