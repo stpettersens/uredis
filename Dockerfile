@@ -5,10 +5,9 @@ FROM alpine:latest
 COPY apk_repositories.txt /etc/apk/repositories
 RUN apk update && apk add --no-cache tzdata python3
 
-# Set timezone for container to Europe/London (GMT/BST)
-# to match application container's timezone.
+# Set timezone for container to UTC.
 # The timezone does not really matter for uredis-server though.
-ENV TZ=Europe/London
+ENV TZ=UTC
 RUN date
 
 # Expose port for clients.
