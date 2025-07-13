@@ -4,7 +4,7 @@
 Latest version is v0.2.0 (WIP) and the following commands are implemented:
 
 * HELLO
-* INFO †
+* INFO (since v0.2.0) †
 * CLIENT
 * PING
 * ECHO
@@ -15,6 +15,7 @@ Latest version is v0.2.0 (WIP) and the following commands are implemented:
 * FLUSHDB
 * FLUSHALL
 * KEYS
+* QUIT (since v0.2.0; TODO)
 
 The only data type supported so far is strings, but this version
 is good enough to run my http://ip-locator.xyz application on FreeBSD.
