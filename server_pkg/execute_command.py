@@ -40,16 +40,16 @@ def drop_connection(conn: Socket, logs: Logs, params: bytes, alias: str) -> None
 
     elif alias == 'quit':
         # Since v0.2.0, a bit hacky :/, just drop the last connection.
-        conn_id: tuple[str, str] = Connections().get_last()
-        dropped: str = Connections().drop_int_id(conn_id)
-        print_log(dropped, logs)
-        print(dropped)
+        conn_id: int = Connections().get_last()
+        dropped_last_conn: str = Connections().drop_int_id(conn_id)
+        print_log(dropped_last_conn, logs)
+        print(dropped_last_conn)
 
     else:
         conn_key: tuple[str, str] = Connections().from_bytes(params)
-        dropped: str = Connections().drop(conn_key)
-        print_log(dropped, logs)
-        print(dropped)
+        dropped_key_conn: str = Connections().drop(conn_key)
+        print_log(dropped_key_conn, logs)
+        print(dropped_key_conn)
 
 def execute_command(conn: Socket, port: int, cid: int, num_conns: int,
 working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int, start_time: datetime, command: bytes, params: bytes = b'') -> None:
