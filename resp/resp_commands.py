@@ -18,5 +18,6 @@ class RespCommands:
             'FLUSHALL',
             'KEYS',
             '_GET_CONN',    # since v0.2.0
-            '_DROP_CONN'    # since v0.2.0
+            '_DROP_CONN',   # since v0.2.0
+            'QUIT'          # since v0.2.0, alias for _DROP_CONN
         ]

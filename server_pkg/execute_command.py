@@ -32,6 +32,25 @@ def print_log(message: str|bytes, logs: Logs, request: bool = False) -> None:
     msg += str(message)
     logging.info(msg.strip())
 
+def drop_connection(conn: Socket, logs: Logs, params: bytes, alias: str) -> None:
+    if len(params) == 0 and alias == '_drop_conn':
+        err = RedisError(f"wrong number of arguments for '{alias}' command")
+        print_log(err.get(), logs)
+        conn.send(err.get())
+
+    elif alias == 'quit':
+        # Since v0.2.0, a bit hacky :/, just drop the last connection.
+        conn_id: tuple[str, str] = Connections().get_last()
+        dropped: str = Connections().drop_int_id(conn_id)
+        print_log(dropped, logs)
+        print(dropped)
+
+    else:
+        conn_key: tuple[str, str] = Connections().from_bytes(params)
+        dropped: str = Connections().drop(conn_key)
+        print_log(dropped, logs)
+        print(dropped)
+
 def execute_command(conn: Socket, port: int, cid: int, num_conns: int,
 working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int, start_time: datetime, command: bytes, params: bytes = b'') -> None:
     if params == b'':
@@ -58,15 +77,10 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
             conn.send(bytes_key)
 
         case b'_DROP_CONN':
-            if len(params) == 0:
-                err = RedisError("wrong number of arguments for '_drop_conn' command")
-                print_log(err.get(), logs)
-                conn.send(err.get())
-            else:
-                conn_key: tuple[str, str] = Connections().from_bytes(params)
-                dropped: str = Connections().drop(conn_key)
-                print_log(dropped, logs)
-                print(dropped)
+            drop_connection(conn, logs, params, '_drop_conn')
+
+        case b'QUIT': # since v0.2.0, an alias on the server for _drop_conn.
+            drop_connection(conn, logs, params, 'quit')
 
         case b'HELLO':
             if len(params) == 0:

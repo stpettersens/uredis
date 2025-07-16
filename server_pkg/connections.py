@@ -25,6 +25,10 @@ class Connections:
         self.cids[int(peer_name[1])] = 0
         return f"Dropped connection {peer_name[1]}."
 
+    def drop_int_id(self, conn_id: int) -> str:
+        self.cids[conn_id] = 0
+        return f"Dropped connection {conn_id}."
+
     def get_count(self) -> int:
         conns: int = 0
         for v in self.cids.values():
@@ -32,6 +36,14 @@ class Connections:
                 conns += 1
 
         return conns
+
+    # Since v0.2.0, for QUIT - just return the last connection's ID (int).
+    def get_last(self) -> int:
+        cids_list: list[int] = []
+        for k in self.cids.keys():
+            cids_list.append(int(k))
+
+        return cids_list[-1]
 
     def all(self) -> dict[int, int]:
         return self.cids

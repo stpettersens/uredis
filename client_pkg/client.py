@@ -44,7 +44,7 @@ def display_header(no_prompt: bool, colors: bool = False) -> None:
 
         print_cyan('ATTENTION: Not currently compatible with official Redis server.', colors)
         print()
-        print_gray('Exit the client with EXIT, clear the screen with CLEAR/CLS', colors)
+        print_gray('Exit the client with QUIT/EXIT, clear the screen with CLEAR/CLS', colors)
         print_gray('and display this help message with HELP.', colors)
         print()
 
@@ -88,6 +88,8 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
         return
 
     match command.upper():
+        case 'QUIT':
+            exit_client(s) # Since v0.2.0, QUIT is an alias in the client for EXIT.
         case 'EXIT':
             exit_client(s)
 
