@@ -120,6 +120,24 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
                 print_log(echo.get(), logs)
                 conn.send(echo.get())
 
+        case b'EXISTS': # since v0.2.0.
+            if len(params) == 0:
+                err = RedisError("wrong number of arguments for 'exists' command")
+                print_log(err.get(), logs)
+                conn.send(err.get())
+            else:
+                count = 0
+                for param in params.split():
+                    record = records.get_record(param)
+                    if record.is_dummy():
+                        continue
+
+                    count += 1
+
+                exists = f":{count}\r\n"
+                print_log(exists, logs)
+                conn.send(bytes(exists, 'utf-8'))
+
         case b'SET':
             if len(params) < 2:
                 err = RedisError("wrong number of arguments for 'set' command")

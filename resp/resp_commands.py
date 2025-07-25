@@ -10,6 +10,7 @@ class RespCommands:
             'CLIENT',
             'PING',
             'ECHO',
+            'EXISTS',       # since v0.2.0
             'SET',
             'GET',
             'TTL',
