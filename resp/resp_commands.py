@@ -20,5 +20,6 @@ class RespCommands:
             'KEYS',
             '_GET_CONN',    # since v0.2.0
             '_DROP_CONN',   # since v0.2.0
-            'QUIT'          # since v0.2.0, alias for _DROP_CONN
+            'QUIT',         # since v0.2.0, alias for _DROP_CONN
+            'IMPL'          # since v0.2.0, non-std command that lists all implemented commands.
         ]
