@@ -38,5 +38,5 @@ COPY uredis-client /usr/bin/
 RUN chmod +x /usr/bin/uredis-client
 
 # Run μredis server, binding to 0.0.0.0, writing all changes to disk
-# and limiting that DB file to a size of 15GB (2000000000 bytes).
+# and limiting that DB file to a size of 15GB (15000000000 bytes).
 CMD [ "python3", "uredis-server.pyz", "--bind", "0.0.0.0", "--max-db", "15000000000", "--update-disk" ]
