@@ -17,7 +17,7 @@ Latest version is v0.2.0 (WIP) and the following commands are implemented:
 * FLUSHALL
 * KEYS
 * QUIT (since v0.2.0)
-* IMPL (since v0.2.0, not standard - TODO implement "IMPL command" name to return command usage for a specific command.
+* IMPL (since v0.2.0, not standard, implemented IMPL [command_in_lowercase] for commands listed here.
 
 The only data type supported so far is strings, but this version
 is good enough to run my http://ip-locator.xyz application on FreeBSD.
