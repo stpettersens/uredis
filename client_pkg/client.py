@@ -125,6 +125,9 @@ def execute(command: str, s: Socket, host: str, port: int, colors: bool, show_re
             case RespType.KEYVALS:
                 print_gray(response, colors, pattern='=>')
 
+            case RespType.DOCUMENTATION:
+                print_gray(response, colors, pattern='\n')
+
             case RespType.SHOULD_NOT_SEND:
                 print_red("The command '{}' should not be sent by users."
                 .format(response), colors)

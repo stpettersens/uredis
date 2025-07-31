@@ -24,6 +24,9 @@ class RespDecoder:
         if self.response[0] == '+':
             return (self.response[1:].strip(), RespType.STATUS)
 
+        elif self.response[0] == '~':
+            return (self.response[1:].strip(), RespType.DOCUMENTATION)
+
         elif self.response[0] == '-':
             return ("(error) {}".format(self.response[1:].strip()), RespType.ERROR)
 

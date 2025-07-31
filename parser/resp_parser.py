@@ -7,7 +7,7 @@ from tokenizer.resp_tokenizer import Tokenizer
 
 class Parser:
     def __init__(self, resp_str: str) -> None:
-        self.commands: list[str] = RespCommands().get()
+        self.commands: dict[str, tuple[str, str]] = RespCommands().get()
         self.tokens: list[Token] = []
 
         toks = Tokenizer(resp_str).get_tokens()
@@ -36,7 +36,7 @@ class Parser:
 
             value: str = ''.join(temp)
 
-            if value in self.commands:
+            if value in self.commands.keys():
                 self.tokens.append(Token(TokenKind.CMD, value))
             else:
                 self.tokens.append(Token(TokenKind.PARAM, value))

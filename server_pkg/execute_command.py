@@ -246,18 +246,21 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
 
         case b'IMPL':
             if len(params) > 0:
-                err = RedisError("there are no arguments for 'impl' command")
-                print_log(err.get(), logs)
-                conn.send(err.get())
+                p = params.split()
+                ref_cmd: str = RespCommands().get()[p[0].decode('utf-8').upper()][0]
+                ref_desc: str = RespCommands().get()[p[0].decode('utf-8').upper()][1]
+                the_command: str = f"~{ref_cmd}\n{ref_desc}.\n\r\n"
+                print_log(the_command, logs)
+                conn.send(bytes(the_command, "utf-8"))
             else:
                 cmds: list[str] = []
-                for impl in RespCommands().get():
+                for impl in RespCommands().get().keys():
                     if impl.startswith("_"):
                         continue
 
                     cmds.append(impl)
 
-                msg: str = "+The following commands are implemented:\n" + '\n'.join(cmds) + '\r\n'
-                print_log(msg, logs)
-                conn.send(bytes(msg, "utf-8"))
+                commands: str = "~The following commands are implemented:\n" + '\n'.join(cmds) + '\r\n'
+                print_log(commands, logs)
+                conn.send(bytes(commands, "utf-8"))
 
