@@ -7,16 +7,21 @@
 # $server
 
 import os
+import io
 import re
 import sys
+import uuid
+import hmac
 import getopt
 import socket
 import pickle
+import hashlib
+import zipfile
 import logging
 import selectors
 
-from uuid import UUID
 from time import sleep
+from pathlib import Path
 from typing import TypeAlias
 from datetime import datetime
 from threading import Thread, Event
@@ -35,6 +40,21 @@ Socket: TypeAlias = socket.socket
 DefaultSelector: TypeAlias = selectors.DefaultSelector
 
 g_sel: DefaultSelector = selectors.DefaultSelector()
+
+def generate_secret_key_file(working_dir: str) -> None:
+    secret_key_path = os.path.join(working_dir, '.secret_key')
+    if not os.path.exists(secret_key_path):
+        with open(secret_key_path, 'w') as f:
+            print('Generating secret key...')
+            secret_key: str = str(uuid.uuid4())
+            f.write(secret_key)
+
+def load_secret_key_from_file(working_dir: str) -> bytes:
+    secret_key: str = ''
+    with open(os.path.join(working_dir, '.secret_key')) as f:
+        secret_key = f.read()
+
+    return bytes(secret_key, 'utf-8')
 
 def validate_ip_v4(ip: str) -> bool:
     if ip.strip() == '0.0.0.0': # Bind all is allowable.
@@ -76,6 +96,7 @@ def display_logo(colors: bool) -> None:
 
 def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size: int) -> None:
     path_db: str = os.path.join(working_dir, dump_db)
+    zipped_db: str = os.path.join(working_dir, str(Path(dump_db).stem) + '.urdb')
     if max_size != -1 and os.path.exists(path_db) and os.path.getsize(path_db) >= max_size:
         os.remove(path_db)
 
@@ -86,18 +107,34 @@ def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size
         return
 
     print('Saving {} record(s) to {}...'
-    .format(records.get_number(), dump_db))
-    with open(path_db, 'wb') as urdb:
-        pickle.dump(records, urdb)
+    .format(records.get_number(), zipped_db))
+
+    # Store data for storage in .urdb file.
+    data: bytes = pickle.dumps(records)
+
+    # Generate a digest for file verification.
+    secret_key: bytes = load_secret_key_from_file(working_dir)
+    digest: str = hmac.new(secret_key, data, hashlib.sha256).hexdigest()
+
+    # Store digest and pickled data in a zipped file with .urdb file extension.
+    with zipfile.ZipFile(zipped_db, 'w') as urdb:
+        urdb.writestr(Path(path_db).name, data)
+        urdb.writestr('digest.txt', digest)
 
 def load_records(working_dir: str, dump_db: str) -> RedisRecords|None:
-    path_db: str = os.path.join(working_dir, dump_db)
+    zipped_db: str = os.path.join(working_dir, str(Path(dump_db).stem) + '.urdb')
     records = None
-    if os.path.exists(path_db):
-        with open(path_db, 'rb') as urdb:
-            records = pickle.load(urdb)
-            print('Loaded {} record(s) from {}.'
-            .format(records.get_number(), dump_db))
+    if os.path.exists(zipped_db):
+        data = io.BytesIO()
+        digest = io.BytesIO()
+        with zipfile.ZipFile(zipped_db) as urdb:
+
+
+
+            #records = pickle.load(pkl)
+            #print('Report data file format version: ', records.get_format_version())
+            #print('Loaded {} record(s) from {}.'
+            #.format(records.get_number(), dump_db))
 
     return records
 
@@ -117,7 +154,7 @@ def decay_ttl_records(records: RedisRecords, stop_event: Event) -> None:
     print('Stop decaying TTL record(s)...')
 
 def save_records_on_change(working_dir: str, records: RedisRecords, dump_db: str, max_size: int, stop_event: Event) -> None:
-    _uuid: UUID = records.get_uuid()
+    _uuid: uuid.UUID = records.get_uuid()
     print('Started record(s) changes thread.')
     while not stop_event.is_set():
         if records.has_changed(_uuid):
@@ -259,7 +296,7 @@ def main(args: list[str]) -> None:
     host: str = '127.0.0.1'
     port: int = 6379
     protocol: int = 2
-    dump_db: str = 'dump.urdb'
+    dump_db: str = 'dump.pkl'
     log_file: str = 'uredis.log'
     logs: Logs = Logs.LOGGING
     update_disk: bool = False
@@ -399,6 +436,8 @@ def main(args: list[str]) -> None:
     .format(get_version(), host, port, os.getpid()), logs, log_only=True)
 
     print_log('Server started at {}.'.format(start_time), logs)
+
+    generate_secret_key_file(working_dir)
 
     records: RedisRecords|None = None
     if not no_disk:

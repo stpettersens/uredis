@@ -10,8 +10,12 @@ UUID: TypeAlias = uuid.UUID
 
 class RedisRecords:
     def __init__(self) -> None:
+        self.format_version: float = 0.2 # since v0.2.0.
         self.uuid: UUID = uuid.uuid4()
         self.records: dict = {}
+
+    def get_format_version(self) -> float:
+        return self.format_version
 
     def _update_uuid(self) -> None:
         # We call this method whenever we
@@ -41,7 +45,7 @@ class RedisRecords:
             return self.records[str(key)]
 
     def delete_db_records(self, db: bytes) -> bytes:
-        # TODO: In the future this will only flush the specific db.a
+        # TODO: In the future this will only flush the specific db.
         # For now, invoke delete_all_records.
         return self.delete_all_records()
 
