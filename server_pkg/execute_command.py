@@ -247,11 +247,17 @@ working_dir: str, logs: Logs, version: str, records: RedisRecords, protocol: int
         case b'IMPL':
             if len(params) > 0:
                 p = params.split()
-                ref_cmd: str = RespCommands().get()[p[0].decode('utf-8').upper()][0]
-                ref_desc: str = RespCommands().get()[p[0].decode('utf-8').upper()][1]
-                the_command: str = f"~{ref_cmd}\n{ref_desc}.\n\r\n"
-                print_log(the_command, logs)
-                conn.send(bytes(the_command, "utf-8"))
+                try:
+                    ref_cmd: str = RespCommands().get()[p[0].decode('utf-8').upper()][0]
+                    ref_desc: str = RespCommands().get()[p[0].decode('utf-8').upper()][1]
+                    the_command: str = f"~{ref_cmd}\n{ref_desc}.\n\r\n"
+                    print_log(the_command, logs)
+                    conn.send(bytes(the_command, "utf-8"))
+
+                except KeyError:
+                    the_msg: str = f"-There is no command with that name.\r\n"
+                    print_log(the_msg, logs)
+                    conn.send(bytes(the_msg, "utf-8"))
             else:
                 cmds: list[str] = []
                 for impl in RespCommands().get().keys():

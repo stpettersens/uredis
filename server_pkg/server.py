@@ -7,7 +7,6 @@
 # $server
 
 import os
-import io
 import re
 import sys
 import uuid
@@ -33,7 +32,7 @@ from server_pkg.exit_params import ExitParams
 from server_pkg.connections import Connections
 from redis.redis_records import RedisRecords
 from server_pkg.execute_command import execute_command
-from colors.print_colors import print_green, print_gray
+from colors.print_colors import print_green, print_gray, print_red
 from detection.detection import get_platform, get_arch
 
 Socket: TypeAlias = socket.socket
@@ -95,19 +94,20 @@ def display_logo(colors: bool) -> None:
         print(logo)
 
 def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size: int) -> None:
-    path_db: str = os.path.join(working_dir, dump_db)
+    path_db: str = os.path.join(working_dir, dump_db.replace('.urdb', '.pkl'))
     zipped_db: str = os.path.join(working_dir, str(Path(dump_db).stem) + '.urdb')
-    if max_size != -1 and os.path.exists(path_db) and os.path.getsize(path_db) >= max_size:
-        os.remove(path_db)
+    if max_size != -1 and os.path.exists(zipped_db) and os.path.getsize(zipped_db) >= max_size:
+        os.remove(zipped_db)
 
     if records.get_number() == 0:
-        if os.path.exists(path_db):
-            os.remove(path_db)
+        if os.path.exists(zipped_db):
+            os.remove(zipped_db)
+
             print('Cleared {} (0 records).'.format(dump_db))
         return
 
-    print('Saving {} record(s) to {}...'
-    .format(records.get_number(), zipped_db))
+    records.set_file_version(2) # Always save dumped records in v2 format.
+    print('Saving {} record(s) to {}...'.format(records.get_number(), zipped_db))
 
     # Store data for storage in .urdb file.
     data: bytes = pickle.dumps(records)
@@ -121,20 +121,55 @@ def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size
         urdb.writestr(Path(path_db).name, data)
         urdb.writestr('digest.txt', digest)
 
-def load_records(working_dir: str, dump_db: str) -> RedisRecords|None:
-    zipped_db: str = os.path.join(working_dir, str(Path(dump_db).stem) + '.urdb')
+def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|None:
+    zipped_db: str = os.path.join(working_dir, dump_db)
+    file_format: int = 2
     records = None
+    data: bytes = b''
+    received_digest: str = ''
+    expected_digest: str = ''
     if os.path.exists(zipped_db):
-        data = io.BytesIO()
-        digest = io.BytesIO()
+        if not zipfile.is_zipfile(zipped_db):
+            # Fallback to file format version 1
+            with open(zipped_db, 'rb') as v1:
+                file_format = 1
+                records = pickle.load(v1)
+                print('Data format version:', file_format)
+                print_gray("ATTENTION: v1 file will be upgraded on save.", colors)
+
+                return records
+
         with zipfile.ZipFile(zipped_db) as urdb:
+            for entry in urdb.infolist():
+                with urdb.open(entry.filename) as file:
+                    match entry.filename:
+                        case 'dump.pkl':
+                            data = file.read()
 
+                        case 'digest.txt':
+                            received_digest = file.read().decode('utf-8')
+    else:
+        return records
 
+    secret_key: bytes = load_secret_key_from_file(working_dir)
+    expected_digest = hmac.new(secret_key, data, hashlib.sha256).hexdigest()
 
-            #records = pickle.load(pkl)
-            #print('Report data file format version: ', records.get_format_version())
-            #print('Loaded {} record(s) from {}.'
-            #.format(records.get_number(), dump_db))
+    if received_digest != expected_digest:
+        print_red('WARNING: Digests do not match!', colors)
+        print_red('Data is potentially comprised.', colors)
+        _continue: str = input('Continue? (y/N)').lower()
+        if _continue == '' or _continue == 'n' or not _continue == 'y':
+            print_gray('Aborting...', colors)
+            sys.exit(-1)
+        else:
+            print_red('WARNING: Loading data file anyway. Fingers crossed.', colors)
+
+    else:
+        print('Digests matched OK.')
+
+    records = pickle.loads(data)
+    print('Data format version:', file_format)
+    print('Loaded {} record(s) from {}.'.format(records.get_number(), zipped_db))
 
     return records
 
@@ -189,7 +224,7 @@ def display_usage(exit_code: int) -> int:
     print('-b <ip>: Set the host IP address to bind to (e.g. 127.0.0.1/0.0.0.0).')
     print('-p | --port <port>: Set port to use for server (default = 6379 as redis-server).')
     print('-x | --protocol <2|3>: Set Redis protocol version as 2 or 3 (default = 2).')
-    print('-d | --db <db_name>: Set file name for URDB (μRDB file; default = dump.urdb).')
+    print('-d | --db <db_name>: Set file name for URDB (db dump) file; default = dump.urdb).')
     print('-l | --log <log_file>: Set file name for log file (default = uredis.log).')
     print('-n | --no-log: Disable logging client operations.')
     print('-u | --update-disk: Write changes to disk every time records are added or removed.')
@@ -296,7 +331,7 @@ def main(args: list[str]) -> None:
     host: str = '127.0.0.1'
     port: int = 6379
     protocol: int = 2
-    dump_db: str = 'dump.pkl'
+    dump_db: str = 'dump.urdb'
     log_file: str = 'uredis.log'
     logs: Logs = Logs.LOGGING
     update_disk: bool = False
@@ -441,11 +476,11 @@ def main(args: list[str]) -> None:
 
     records: RedisRecords|None = None
     if not no_disk:
-        records = load_records(working_dir, dump_db)
+        records = load_records(working_dir, dump_db, colors)
 
     if records == None:
        print('Initializing new records collection.')
-       records = RedisRecords()
+       records = RedisRecords(file_format=2)
 
     stop_event: Event = Event()
     ttl_thread: Thread = Thread(target=decay_ttl_records, args=(records, stop_event))

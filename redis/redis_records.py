@@ -9,13 +9,17 @@ from redis.redis_record import RedisRecord
 UUID: TypeAlias = uuid.UUID
 
 class RedisRecords:
-    def __init__(self) -> None:
-        self.format_version: float = 0.2 # since v0.2.0.
+    def __init__(self, file_format: int) -> None:
+        # v1 is only pickled data, v2 is improved, zipped format:
+        self.file_format: int = file_format
         self.uuid: UUID = uuid.uuid4()
         self.records: dict = {}
 
-    def get_format_version(self) -> float:
-        return self.format_version
+    def set_file_version(self, file_format: int) -> None:
+        self.file_format = file_format
+
+    def get_file_version(self) -> int:
+        return self.file_format
 
     def _update_uuid(self) -> None:
         # We call this method whenever we
