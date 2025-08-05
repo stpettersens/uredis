@@ -481,7 +481,7 @@ def main(args: list[str]) -> None:
 
     if records == None:
        print('Initializing new records collection.')
-       records = RedisRecords(file_format=2)
+       records = RedisRecords()
 
     stop_event: Event = Event()
     ttl_thread: Thread = Thread(target=decay_ttl_records, args=(records, stop_event))

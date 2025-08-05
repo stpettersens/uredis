@@ -7,11 +7,11 @@ from redis_record import RedisRecord
 UUID: TypeAlias = uuid.UUID
 
 class RedisRecords():
-    def __init__(self):
+    def __init__(self) -> None:
         self.uuid: UUID = uuid.uuid4()
         self.records: dict = {}
 
-    def _update_uuid(self):
+    def _update_uuid(self) -> None:
         # We call this method whenever we
         # push records or delete records.
         self.uuid = uuid.uuid4()
