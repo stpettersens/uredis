@@ -32,8 +32,8 @@ from server_pkg.exit_params import ExitParams
 from server_pkg.connections import Connections
 from redis.redis_records import RedisRecords
 from server_pkg.execute_command import execute_command
-from colors.print_colors import print_green, print_gray, print_red
 from detection.detection import get_platform, get_arch
+from colors.print_colors import print_green, print_gray, print_red
 
 Socket: TypeAlias = socket.socket
 DefaultSelector: TypeAlias = selectors.DefaultSelector
