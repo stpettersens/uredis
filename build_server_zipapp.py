@@ -46,7 +46,7 @@ if __name__ == "__main__":
         os.path.join('redis', 'redis_records.py'),
         os.path.join('tokenizer', 'resp_token.py'),
         os.path.join('tokenizer', 'resp_tokenizer.py'),
-        os.path.join('parser', 'resp_parser.py')
+        os.path.join('parser', 'resp_parser.py'),
     ]
 
     try:
@@ -61,6 +61,9 @@ if __name__ == "__main__":
         for py in files:
             shutil.copy(py, os.path.join("server_app", dirs[i]))
             i += 1
+
+        shutil.copy('redis_record.py', 'server_app')
+        shutil.copy('redis_records.py', 'server_app')
 
         shutil.copy('server__main__.py', os.path.join('server_app', '__main__.py'))
 

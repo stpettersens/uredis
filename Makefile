@@ -15,10 +15,10 @@ check_server:
 	uvx mypy server__main__.py
 
 build_client:
-	uv run python build_server_zipapp.py
+	uv run python build_client_zipapp.py
 
 build_server:
-	uv run python build_client_zipapp.py
+	uv run python build_server_zipapp.py
 
 test_parser:
 	uv run python test_parser.py
