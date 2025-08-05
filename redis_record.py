@@ -1,4 +1,4 @@
-# This file is in the top level for backwards compatiblity with v1 file format.
+# This file is in top level for backwards compatibility with v1 file format.
 class RedisRecord():
     def __init__(self, value: bytes, ttl: int = -1, dummy: bool = False) -> None:
         self.record = str(value).replace('___', ' ')
