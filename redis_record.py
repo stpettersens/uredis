@@ -1,3 +1,5 @@
+# $server
+
 # This file is in top level for backwards compatibility with v1 file format.
 class RedisRecord():
     def __init__(self, value: bytes, ttl: int = -1, dummy: bool = False) -> None:

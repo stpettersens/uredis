@@ -1,3 +1,5 @@
+# $server
+
 # This file is in top level for backwards compatibility with v1 file format.
 import uuid
 from typing import TypeAlias
