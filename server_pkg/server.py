@@ -106,7 +106,6 @@ def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size
             print('Cleared {} (0 records).'.format(dump_db))
         return
 
-    records.set_file_version(2) # Always save dumped records in v2 format.
     print('Saving {} record(s) to {}...'.format(records.get_number(), zipped_db))
 
     # Store data for storage in .urdb file.
@@ -132,10 +131,12 @@ def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|N
         if not zipfile.is_zipfile(zipped_db):
             # Fallback to file format version 1
             with open(zipped_db, 'rb') as v1:
+                import redis_records
                 file_format = 1
                 records = pickle.load(v1)
                 print('Data format version:', file_format)
-                print_gray("ATTENTION: v1 file will be upgraded on save.", colors)
+                print('Loaded {} record(s) from {}.'.format(records.get_number(), zipped_db))
+                print("ATTENTION: v1 file will be upgraded on save.")
 
                 return records
 

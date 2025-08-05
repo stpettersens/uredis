@@ -32,7 +32,7 @@ def display_version() -> int:
     return 0
 
 def display_header(no_prompt: bool, colors: bool = False) -> None:
-    print('μRedis Client: a minimal clone of Redis CLI ({} {}, {})'
+    print('uRedis Client: a minimal clone of Redis CLI ({} {}, {})'
     .format(get_version(), get_platform(), get_arch()))
     print('Copyright 2024-2025 Sam Saint-Pettersen <s.stpettersen@pm.me>.')
     print()

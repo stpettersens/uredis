@@ -1,19 +1,17 @@
-# $server
-
+# This file is in top level for backwards compatibility with v1 file format.
 import uuid
-
 from typing import TypeAlias
 
-from redis.redis_record import RedisRecord
+from redis_record import RedisRecord
 
 UUID: TypeAlias = uuid.UUID
 
-class RedisRecords:
-    def __init__(self) -> None:
+class RedisRecords():
+    def __init__(self):
         self.uuid: UUID = uuid.uuid4()
         self.records: dict = {}
 
-    def _update_uuid(self) -> None:
+    def _update_uuid(self):
         # We call this method whenever we
         # push records or delete records.
         self.uuid = uuid.uuid4()
@@ -34,23 +32,18 @@ class RedisRecords:
         self._update_uuid()
         self.records[str(key)] = record
 
-    def get_record(self, key: str|bytes) -> RedisRecord:
+    def get_record(self, key: bytes) -> RedisRecord:
         if not str(key) in self.records:
             return RedisRecord(b'', dummy=True)
         else:
             return self.records[str(key)]
-
-    def delete_db_records(self, db: bytes) -> bytes:
-        # TODO: In the future this will only flush the specific db.
-        # For now, invoke delete_all_records.
-        return self.delete_all_records()
 
     def delete_all_records(self) -> bytes:
         self._update_uuid()
         self.records = {}
         return b'+OK\r\n'
 
-    def delete_record(self, key: str|bytes) -> bytes:
+    def delete_record(self, key: bytes) -> bytes:
         if not str(key) in self.records:
             return b':0\r\n'
 
