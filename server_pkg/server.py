@@ -20,7 +20,6 @@ import logging
 import selectors
 
 from time import sleep
-from pathlib import Path
 from typing import TypeAlias
 from datetime import datetime
 from threading import Thread, Event
@@ -94,8 +93,8 @@ def display_logo(colors: bool) -> None:
         print(logo)
 
 def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size: int) -> None:
-    path_db: str = os.path.join(working_dir, dump_db.replace('.urdb', '.pkl'))
-    zipped_db: str = os.path.join(working_dir, str(Path(dump_db).stem) + '.urdb')
+    #path_db: str = os.path.join(working_dir,   dump_db.replace('.urdb', '.pkl'))
+    zipped_db: str = os.path.join(working_dir, dump_db)
     if max_size != -1 and os.path.exists(zipped_db) and os.path.getsize(zipped_db) >= max_size:
         os.remove(zipped_db)
 
@@ -111,19 +110,23 @@ def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size
     # Store data for storage in .urdb file.
     data: bytes = pickle.dumps(records)
 
+    # Regenerate secret file if was deleted
+    # while server was running.
+    generate_secret_key_file(working_dir)
+
     # Generate a digest for file verification.
     secret_key: bytes = load_secret_key_from_file(working_dir)
     digest: str = hmac.new(secret_key, data, hashlib.sha256).hexdigest()
 
     # Store digest and pickled data in a zipped file with .urdb file extension.
     with zipfile.ZipFile(zipped_db, 'w') as urdb:
-        urdb.writestr(Path(path_db).name, data)
+        urdb.writestr('dump.pkl', data)
         urdb.writestr('digest.txt', digest)
 
 def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|None:
     zipped_db: str = os.path.join(working_dir, dump_db)
     file_format: int = 2
-    records = None
+    records = O
     data: bytes = b''
     received_digest: str = ''
     expected_digest: str = ''
@@ -157,7 +160,7 @@ def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|N
 
     if received_digest != expected_digest:
         print_red('WARNING: Digests do not match!', colors)
-        print_red('Data is potentially comprised.', colors)
+        print_red('Data is potentially compromised or from another matchine.', colors)
         _continue: str = input('Continue? (y/N)').lower()
         if _continue == '' or _continue == 'n' or not _continue == 'y':
             print_gray('Aborting...', colors)
