@@ -126,7 +126,7 @@ def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size
 def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|None:
     zipped_db: str = os.path.join(working_dir, dump_db)
     file_format: int = 2
-    records = O
+    records = None
     data: bytes = b''
     received_digest: str = ''
     expected_digest: str = ''
