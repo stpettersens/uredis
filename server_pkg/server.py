@@ -95,9 +95,8 @@ def display_logo(colors: bool) -> None:
 def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size: int) -> None:
     zipped_db: str = os.path.join(working_dir, dump_db)
     if max_size != -1 and os.path.exists(zipped_db) and os.path.getsize(zipped_db) > max_size:
-        print(f'ATTENTION: Database file was deleted as it exceeded {} bytes.',
-        max_size))
         os.remove(zipped_db)
+        print(f'ATTENTION: Database file was deleted as it exceeded {max_size} bytes.')
 
     if records.get_number() == 0:
         if os.path.exists(zipped_db):
@@ -162,7 +161,7 @@ def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|N
     if received_digest != expected_digest:
         print_red('WARNING: Digests do not match!', colors)
         print_red('Data is potentially compromised or from another matchine.', colors)
-        _continue: str = input('Continue? (y/N)').lower()
+        _continue: str = input('Continue? (y/N) ').lower()
         if _continue == '' or _continue == 'n' or not _continue == 'y':
             print_gray('Aborting...', colors)
             sys.exit(-1)
