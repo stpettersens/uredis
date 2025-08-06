@@ -84,6 +84,10 @@ def display_version() -> int:
     print('uRedis Server {} on {} ({})'.format(get_version(), get_platform(), get_arch()))
     return 0
 
+# This is is used by create_release_pkg.py
+def get_build_version() -> str:
+    return 'uRedis {}'.format(get_version())
+
 def display_logo(colors: bool) -> None:
     logo: str = r"""
        ____  _____ ____ ___ ____

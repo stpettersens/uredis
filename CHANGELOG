@@ -1,7 +1,7 @@
 v0.2.0:
 * Implement INFO command.
-
 * Restructed code into modules.
+* Database dump files are now archives signed with a digest.
 
 TODO fix this on Windows:
 * Server now also exits from a SIGBREAK (Ctrl+Break/Pause on Windows).

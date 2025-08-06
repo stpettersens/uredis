@@ -1,6 +1,8 @@
 __pycache__
 .venv
 .mypy_cache
+version.txt
+*.zip
 *.pyz
 *.rdb
 *.urdb

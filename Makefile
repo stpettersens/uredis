@@ -22,7 +22,7 @@ build_client:
 build_server:
 	uv run python build_server_zipapp.py
 
-mark_as_release_candidate:
+rc:
 	uv run python mark_as_release_candidate.py
 
 test_parser:
@@ -40,6 +40,9 @@ built_server:
 built_client:
 	uv run python uredis-client.pyz
 
+package:
+	uv run python create_release_pkg.py
+
 test: test_parser
 
 build_docker:
@@ -49,5 +52,5 @@ run_docker:
 	uv run python run_docker_container.py
 
 clean:
-	@echo Cleaning PYZ for server and client...
+	@echo Cleaning PYZs and ZIPs for server and client...
 	uv run python clear_pyz.py
