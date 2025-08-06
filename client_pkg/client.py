@@ -6,9 +6,11 @@
 #
 # $client
 
+import os
 import sys
 import getopt
 import socket
+import zipfile
 import platform
 
 from typing import TypeAlias
@@ -25,6 +27,13 @@ g_conn: bytes = b''
 
 def get_version() -> str:
     version: str = '0.2.0'
+    pyz: str = 'uredis-client.pyz'
+    if os.path.exists(pyz):
+        with zipfile.ZipFile(pyz) as _pyz:
+            for entry in _pyz.infolist():
+                if entry.filename == '.rc':
+                    version += ' (Release Candidate)'
+
     return version
 
 def display_version() -> int:

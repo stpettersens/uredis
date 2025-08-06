@@ -14,11 +14,16 @@ check_client:
 check_server:
 	uvx mypy server__main__.py
 
+all: build_client build_server
+
 build_client:
 	uv run python build_client_zipapp.py
 
 build_server:
 	uv run python build_server_zipapp.py
+
+mark_as_release_candidate:
+	uv run python mark_as_release_candidate.py
 
 test_parser:
 	uv run python test_parser.py

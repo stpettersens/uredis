@@ -71,6 +71,13 @@ def validate_ip_v4(ip: str) -> bool:
 
 def get_version() -> str:
     version: str = '0.2.0'
+    pyz: str = 'uredis-server.pyz'
+    if os.path.exists(pyz):
+        with zipfile.ZipFile(pyz) as _pyz:
+            for entry in _pyz.infolist():
+                if entry.filename == '.rc':
+                    version += ' (Release Candidate)'
+
     return version
 
 def display_version() -> int:

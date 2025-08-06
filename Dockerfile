@@ -24,19 +24,25 @@ VOLUME /opt/uredis
 # Copy uredis-server PYZ to container.
 COPY uredis-server.pyz ./
 
-# Test uredis-server installed.
-RUN python3 /opt/uredis/uredis-server.pyz --version
-
 # Copy uredis-client PYZ to container.
 COPY uredis-client.pyz ./
 
-# Test uredis-client installed.
-RUN python3 /opt/uredis/uredis-client.pyz --version
+# Create executable wrapper for server.
+RUN echo "#!/bin/sh" >> /uredis/uredis-server
+RUN echo "python3 /opt/uredis/uredis-server.pyz $@" >> /usr/bin/uredis-server
+RUN chmod +x /usr/bin/uredis-server
 
-# Copy executable wrapper for client.
-#COPY uredis-client /usr/bin/
-#RUN chmod +x /usr/bin/uredis-client
+# Create executable wrapper for client.
+RUN echo "#!/bin/sh" >> /usr/bin/uredis-client
+RUN echo "python3 /opt/uredis/uredis-client.pyz $@" >> /usr/bin/uredis-client
+RUN chmod +x /usr/bin/uredis-client
+
+# Test uredis-server installed.
+RUN uredis-server --version
+
+# Test uredis-client installed.
+RUN uredis-client --version
 
 # Run μredis server, binding to 0.0.0.0, writing all changes to disk
-# and limiting that DB file to a size of 15GB (15000000000 bytes).
-CMD [ "python3", "uredis-server.pyz", "--bind", "0.0.0.0", "--max-db", "15000000000", "--update-disk" ]
+# and limiting that DB file to a size of 15GB (15,000,000,000 bytes).
+CMD [ "uredis-server", "--bind", "0.0.0.0", "--max-db", "15G, "--update-disk" ]
