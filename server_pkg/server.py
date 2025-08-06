@@ -43,7 +43,7 @@ def generate_secret_key_file(working_dir: str) -> None:
     secret_key_path = os.path.join(working_dir, '.secret_key')
     if not os.path.exists(secret_key_path):
         with open(secret_key_path, 'w') as f:
-            print('Generating secret key...')
+            print('Generating secret key file...')
             secret_key: str = str(uuid.uuid4())
             f.write(secret_key)
 
@@ -93,9 +93,10 @@ def display_logo(colors: bool) -> None:
         print(logo)
 
 def save_records(working_dir: str, records: RedisRecords, dump_db: str, max_size: int) -> None:
-    #path_db: str = os.path.join(working_dir,   dump_db.replace('.urdb', '.pkl'))
     zipped_db: str = os.path.join(working_dir, dump_db)
-    if max_size != -1 and os.path.exists(zipped_db) and os.path.getsize(zipped_db) >= max_size:
+    if max_size != -1 and os.path.exists(zipped_db) and os.path.getsize(zipped_db) > max_size:
+        print(f'ATTENTION: Database file was deleted as it exceeded {} bytes.',
+        max_size))
         os.remove(zipped_db)
 
     if records.get_number() == 0:
