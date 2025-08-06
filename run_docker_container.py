@@ -28,6 +28,7 @@ def create_env_file_for_app(app_name: str = 'default') -> None:
     # for the target application which uses uredis.
     target_app_dir: str = os.path.join(os.path.dirname(__file__), os.pardir)
     with open(os.path.join(target_app_dir, '.env', 'w') as f:
+        f.write(f'APP_NETWORK={app_name}_network\n')
         f.write(f'{app_name.upper()}_REDIS_HOST=TODO\n')
         f.write(f'{app_name.upper()}_REDIS_PORT=6379\n')
 
