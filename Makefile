@@ -37,8 +37,11 @@ built_client:
 
 test: test_parser
 
-docker:
+build_docker:
 	uv run python build_docker_image.py
+
+run_docker:
+	uv run python run_docker_container.py
 
 clean:
 	@echo Cleaning PYZ for server and client...
