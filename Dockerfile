@@ -34,8 +34,8 @@ COPY uredis-client.pyz ./
 RUN python3 /opt/uredis/uredis-client.pyz --version
 
 # Copy executable wrapper for client.
-COPY uredis-client /usr/bin/
-RUN chmod +x /usr/bin/uredis-client
+#COPY uredis-client /usr/bin/
+#RUN chmod +x /usr/bin/uredis-client
 
 # Run μredis server, binding to 0.0.0.0, writing all changes to disk
 # and limiting that DB file to a size of 15GB (15000000000 bytes).
