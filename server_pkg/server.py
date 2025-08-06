@@ -139,7 +139,7 @@ def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|N
                 records = pickle.load(v1)
                 print('Data format version:', file_format)
                 print('Loaded {} record(s) from {}.'.format(records.get_number(), zipped_db))
-                print("ATTENTION: v1 file will be upgraded on save.")
+                print_green("ATTENTION: v1 file will be upgraded on save.", colors)
 
                 return records
 
@@ -208,7 +208,7 @@ def daemon_write_pid(daemon_dir: str) -> None:
 
 def display_header(colors: bool = False) -> None:
     display_logo(colors)
-    print('uRedis Server: a minimal clone of Redis server ({} {}, {})'
+    print('uRedis Server: a minimal clone of Redis server (v{} {}, {})'
     .format(get_version(), get_platform(), get_arch()))
     print('Copyright 2024-2025 Sam Saint-Pettersen <s.stpettersen@pm.me>.')
     print()
