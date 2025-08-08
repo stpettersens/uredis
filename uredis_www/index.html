@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>uRedis</title>
+<style type="text/css">
+body {
+     font-family: sans-serif;
+     font-size: 10pt;
+     background-color: #ffffff;
+     color: #000000;
+}
+a {
+     color: #000000;
+     text-decoration: underline;
+}
+a:hover {
+     color: #000000;
+     text-decoration: none;
+}
+</style>
+<script type="application/javascript">
+  var g_copySetupText = "curl -sSf https://uredis.stpettersen.xyz/setup | bash";
+  function homelab() {
+    var h = "https://";
+    var hostname = "uredis.homelab.stpettersen.xyz";
+    var projectUrl = h + hostname;
+    var setupUrl = h + hostname + "/setup";
+    if (document.location.hostname == hostname) {
+        document.getElementById("project_url").innerHTML = projectUrl;
+        document.getElementById("project_url").href = projectUrl;
+        document.getElementById("setup_url").innerHTML = setupUrl;
+        document.getElementById("setup_url").href = setupUrl;
+    }
+    g_copySetupText = "curl -sSf " + h + hostname + "/setup | bash";
+  }
+  function copySetup() {
+    navigator.clipboard.writeText(g_copySetupText);
+  }
+</script>
+</head>
+<body onload="homelab()">
+<div>
+<pre>
+       ____  _____ ____ ___ ____
+ _   _|  _ \| ____|  _ \_ _/ ___|
+| | | | |_) |  _| | | | | |\___ \
+| |_| |  _ <| |___| |_| | | ___) |
+ \__,_|_| \_\_____|____/___|____/
+
+</pre>
+<pre>Redis compatible server and client in Python.</pre>
+<pre>Written by Sam Saint-Pettersen &lt;s dot stpettersen at pm dot me&gt;</pre>
+<a id="project_url" href="https://uredis.stpettersen.xyz">https://uredis.stpettersen.xyz</a>
+<p>Install uRedis (<a href="https://github.com/stpettersens/uredis">on GitHub</a>), with the following command on Linux or Unix:</p>
+<pre>curl -sSf <a id="setup_url" href="https://uredis.stpettersen.xyz/setup">https://uredis.stpettersen.xyz/setup</a> | bash</pre>
+<a href="javascript:copySetup()">Copy to clipboard</a>
+</div>
+</body>
+</html>

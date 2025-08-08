@@ -1,8 +1,8 @@
-# Dockerfile to run μredis server.
+# Dockerfile to run uRedis server.
 FROM alpine:latest
 
 # Install required packages, tzdata and python 3.
-COPY apk_repositories.txt /etc/apk/repositories
+RUN sed -i '2s/^# *//' /etc/apk/repositories
 RUN apk update && apk add --no-cache tzdata python3
 
 # Set timezone for container to UTC.
