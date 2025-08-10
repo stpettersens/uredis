@@ -28,13 +28,13 @@ COPY uredis-server.pyz ./
 COPY uredis-client.pyz ./
 
 # Create executable wrapper for server.
-RUN echo "#!/bin/sh" >> /uredis/uredis-server
-RUN echo "python3 /opt/uredis/uredis-server.pyz $@" >> /usr/bin/uredis-server
+RUN echo "#!/bin/sh" > /usr/bin/uredis-server
+RUN echo "python3 /opt/uredis/uredis-server.pyz \$\@" >> /usr/bin/uredis-server
 RUN chmod +x /usr/bin/uredis-server
 
 # Create executable wrapper for client.
-RUN echo "#!/bin/sh" >> /usr/bin/uredis-client
-RUN echo "python3 /opt/uredis/uredis-client.pyz $@" >> /usr/bin/uredis-client
+RUN echo "#!/bin/sh" > /usr/bin/uredis-client
+RUN echo "python3 /opt/uredis/uredis-client.pyz \$\@" >> /usr/bin/uredis-client
 RUN chmod +x /usr/bin/uredis-client
 
 # Test uredis-server installed.
