@@ -1,7 +1,7 @@
 # Dockerfile to run uRedis server.
 FROM alpine:latest
 
-# Install required packages, tzdata and python 3.
+# Install required packages, tzdata and python3.
 RUN sed -i '2s/^# *//' /etc/apk/repositories
 RUN apk update && apk add --no-cache tzdata python3
 
@@ -27,15 +27,21 @@ COPY uredis-server.pyz ./
 # Copy uredis-client PYZ to container.
 COPY uredis-client.pyz ./
 
+# Copy README to container.
+COPY README.md ./
+
+# Copy version.txt to container.
+COPY version.txt ./
+
 # Create executable wrapper for server.
-RUN echo "#!/bin/sh" > /usr/bin/uredis-server
-RUN echo "python3 /opt/uredis/uredis-server.pyz \$\@" >> /usr/bin/uredis-server
-RUN chmod +x /usr/bin/uredis-server
+RUN echo "#!/bin/sh" > /usr/local/bin/uredis-server
+RUN echo "python3 /opt/uredis/uredis-server.pyz \$@" >> /usr/local/bin/uredis-server
+RUN chmod +x /usr/local/bin/uredis-server
 
 # Create executable wrapper for client.
-RUN echo "#!/bin/sh" > /usr/bin/uredis-client
-RUN echo "python3 /opt/uredis/uredis-client.pyz \$\@" >> /usr/bin/uredis-client
-RUN chmod +x /usr/bin/uredis-client
+RUN echo "#!/bin/sh" > /usr/local/bin/uredis-client
+RUN echo "python3 /opt/uredis/uredis-client.pyz \$@" >> /usr/local/bin/uredis-client
+RUN chmod +x /usr/local/bin/uredis-client
 
 # Test uredis-server installed.
 RUN uredis-server --version

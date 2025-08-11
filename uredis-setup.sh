@@ -41,20 +41,20 @@ latest_release="https://uredis.homelab.stpettersen.xyz/releases/uredis_latest.zi
 # Define the Dockerfile.
 dockerfile="https://uredis.homelab.stpettersen.xyz/Dockerfile"
 
-# Default installation directory.
+# Default installation directory (no trailing slash).
 install_dir="/opt/uredis"
 
-# Define Void Linux (xbps) packages:
-xbps_pkgs=(
+# Define Alpine Linux (apk) packages:
+apk_pkgs=(
+    "coreutils"
     "curl"
     "unzip"
     "python3"
     "docker"
 )
 
-# Define Alpine Linux (apk) packages:
-apk_pkgs=(
-    "coreutils"
+# Define Void Linux (xbps) packages:
+xbps_pkgs=(
     "curl"
     "unzip"
     "python3"
@@ -77,13 +77,6 @@ apt_pkgs=(
     "docker.io"
 )
 
-# Define SIP (sip) packages.
-sip_pkgs=(
-    "unzip"
-    "python"
-    "docker"
-)
-
 # Define FreeBSD (pkg) packages.
 pkg_pkgs=(
     "curl"
@@ -93,8 +86,15 @@ pkg_pkgs=(
 )
 
 # Define OpenBSD (pkg_info) packages.
-pkg_info_pkgs=(
+pkg_add_pkgs=(
     "curl"
+    "unzip"
+    "python"
+    "docker"
+)
+
+# Define SIP (sip) packages.
+sip_pkgs=(
     "unzip"
     "python"
     "docker"
@@ -135,36 +135,86 @@ detect_os() {
     sleep 3
 }
 
-update_pkgs() {
+update_packages() {
     echo "Updating package index..."
     case $os in
         "Alpine Linux")
             alpine_enable_all_repos
             apk update
             ;;
+        "Void Linux")
+            xbps-install -Syu
+            ;;
+        "Arch Linux")
+            pacman -Syu --noconfirm
+            ;;
+        "Debian"|"Ubuntu")
+            apt-get update -y
+            ;;
+        "FreeBSD")
+            pkg update
+            ;;
+        "OpenBSD")
+            pkg_info update
+            ;;
     esac
 }
 
-install_pkgs() {
+install_packages() {
     python="python3"
     if [[ $1 == 0 ]] || [[ $1 == 1 ]]; then
         echo "Installing required packages..."
     else
         echo "Installing Docker..."
     fi
+    local end, pkgs, pkgman
     case $os in
         "Alpine Linux")
-            if [[ $1 == 0 ]]; then
-                for i in {0..2}; do
-                    apk add "${apk_pkgs[i]}"
-                done
-            elif [[ $1 == 1 ]]; then
-                apk add "${apk_pkgs[3]}"
-            else
-                apk add "${apk_pkgs[4]}"
-            fi
+            end=2
+            pkgs=$apk_pkgs
+            pkgman="apk add"
             ;;
+        "Void Linux")
+            end=1
+            pkgs=$xbps_pkgs
+            pkgman="xbps-install -Sy"
+            ;;
+        "Arch Linux")
+            end=1
+            pkgs=$pacman_pkgs
+            pkgman="pacman -Sy --noconfirm"
+            ;;
+        "Debian"|"Ubuntu")
+            end=1
+            pkgs=$apt_pkgs
+            pkgman="apt install -y"
+            ;;
+        "FreeBSD")
+            install_dir="/usr/local/opt"
+            end=1
+            pkgs=$pkg_pkgs
+            pkgman="pkg install"
+            ;;
+        "OpenBSD")
+            install_dir="/usr/local/opt"
+            end=1
+            pkgs=$pkg_add_pkgs
+            pkgman="pkg_add"
+            ;;
+         *)
+            end=0
+            pkgs=$sip_pkgs
+            pkgman="sip add"
     esac
+    if [[ $1 == 0 ]]; then
+        for i in {0..$end}; do
+            $pkgman "${pkgs[i]}"
+        done
+    elif [[ $1 == 1 ]]; then
+        $pkgman "${pkgs[(end+1)]}"
+    else
+        $pkgman "${pkgs[(end+2)]}"
+    fi
 }
 
 download_uredis_latest() {
@@ -174,52 +224,72 @@ download_uredis_latest() {
 
 install_uredis_system() {
     echo "Installing uRedis on system..."
-    mkdir -p /opt/uredis
-    mv $(basename $latest_release) /opt/uredis
-    cd /opt/uredis
-    unzip -qq -o /opt/uredis/$(basename $latest_release)
-    rm -f /opt/uredis/$(basename $latest_release)
-    chown -R $1:$1 /opt/uredis
+    mkdir -p $install_dir
+    mv $(basename $latest_release) $install_dir
+    cd $install_dir
+    unzip -qq -o $install_dir/$(basename $latest_release)
+    rm -f $install_dir/$(basename $latest_release)
+    chown -R $1:$1 $install_dir
 }
 
 create_server_wrapper() {
-    echo "#!/bin/sh" > /usr/bin/uredis-server
-    echo "$python /opt/uredis/uredis-server.pyz \$\@" >> /usr/bin/uredis-server
-    chmod +x /usr/bin/uredis-server
+    echo "#!/bin/sh" > /usr/local/bin/uredis-server
+    echo "$python $1/uredis-server.pyz \$@" >> /usr/local/bin/uredis-server
+    chmod +x /usr/local/bin/uredis-server
 }
 
 create_client_wrapper() {
-    echo "#!/bin/sh" > /usr/bin/uredis-client
-    echo "$python /opt/uredis/uredis-client.pyz \$\@" >> /usr/bin/uredis-client
-    chmod +x /usr/bin/uredis-client
+    echo "#!/bin/sh" > /usr/local/bin/uredis-client
+    echo "$python $1/uredis-client.pyz \$\@" >> /usr/local/bin/uredis-client
+    chmod +x /usr/local/bin/uredis-client
 }
 
 install_uredis_docker() {
     echo "Installing uRedis on docker..."
     curl -sSf $dockerfile > $(basename $dockerfile)
+    unzip -qq -o $(basename $latest_release)
+    rm -f $(basename $latest_release)
+    if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
+        docker build -t uredis_img
+        rm -f README.md
+        rm -f version.txt
+    else
+        echo "Could not build Docker images as a PYZ file does not exist!"
+        exit 1
+    fi
 }
 
 main() {
     prompt
     detect_os
-    update_pkgs
-    install_pkgs 0
+    update_packages
+    install_packages 0
     print_uredis_logo
     download_uredis_latest
-    local install
+    local install, user
     read -p "Install uRedis on system or on Docker [SYSTEM/docker]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
-        local user
+        do
+            read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
+        done while [[ -z $install_dir ]]
         while [[ -z $user ]]; do
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
-        install_pkgs 1
+        install_packages 1
         install_uredis_system $user
         create_server_wrapper
         create_client_wrapper
+        echo "Done."
+        echo
+        echo "Run uRedis server with: `uredis-server`"
+        echo "Run uRedis client with: `uredis-client`"
+        echo
     else
-        install_pkgs 2
+        install_packages 2
         install_uredis_docker
+        echo "Done."
+        echo "An image (uredis-img) has been created for Docker:"
+        echo "Run `docker image ls` to see it."
     fi
     exit 0
 }
