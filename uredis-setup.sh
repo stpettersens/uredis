@@ -167,7 +167,9 @@ install_packages() {
     else
         echo "Installing Docker..."
     fi
-    local end, pkgs, pkgman
+    local end
+    local pkgs
+    local pkgman
     case $os in
         "Alpine Linux")
             end=2
@@ -207,7 +209,7 @@ install_packages() {
             pkgman="sip add"
     esac
     if [[ $1 == 0 ]]; then
-        for i in {0..$end}; do
+        for i in {0..end}; do
             $pkgman "${pkgs[i]}"
         done
     elif [[ $1 == 1 ]]; then
@@ -254,7 +256,7 @@ install_uredis_docker() {
         rm -f README.md
         rm -f version.txt
     else
-        echo "Could not build Docker images as a PYZ file does not exist!"
+        echo "Could not build Docker image as a PYZ file does not exist!"
         exit 1
     fi
 }
@@ -266,12 +268,14 @@ main() {
     install_packages 0
     print_uredis_logo
     download_uredis_latest
-    local install, user
+    local install
     read -p "Install uRedis on system or on Docker [SYSTEM/docker]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
-        do
+        while
             read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
-        done while [[ -z $install_dir ]]
+            [[ -z $install_dir ]]
+        do true; done
+        local user
         while [[ -z $user ]]; do
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
