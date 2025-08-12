@@ -18,7 +18,7 @@
 # ------------------------------------------------------------------
 # Please install bash (if necessary) and curl.
 # ------------------------------------------------------------------
-# > curl -sSf https://uredis.stpettersen.xyz/setup | doas bash
+# > curl -sSf https://uredis.stpettersen.xyz/setup | sudo bash
 #
 # OR SAFER WAY, INSPECTING THE SCRIPT CONTENTS BEFORE RUNNING:
 # > curl -sSf https://uredis.stpettersen.xyz/setup > uredis-setup.sh
@@ -112,6 +112,8 @@ print_uredis_logo() {
     cat $(basename $logo)
     rm -f $(basename $logo)
     echo
+    echo "Redis compatible server and client in Python."
+    echo "Written by Sam Saint-Pettersen <s dot stpettersen at pm dot me>"
     echo
     echo
 }
@@ -136,6 +138,7 @@ alpine_enable_all_repos() {
 
 detect_os() {
     os=$(grep NAME /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
+    os=$(echo $os | awk '{ print $1 }')
     echo "Detected $os as operating system."
     sleep 3
 }
@@ -143,14 +146,14 @@ detect_os() {
 update_packages() {
     echo "Updating package index..."
     case $os in
-        "Alpine Linux")
+        "Alpine")
             alpine_enable_all_repos
             apk update
             ;;
-        "Void Linux")
+        "Void")
             xbps-install -Syu
             ;;
-        "Arch Linux")
+        "Arch")
             pacman -Syu --noconfirm
             ;;
         "Debian"|"Ubuntu")
@@ -180,57 +183,62 @@ install_packages() {
     local pkgs
     local pkgman
     case $os in
-        "Alpine Linux")
+        "Alpine")
             end=2
-            pkgs=$apk_pkgs
+            pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             serviceman="rc-update add docker default"
             start="rc-service docker start"
             ;;
-        "Void Linux")
+        "Void")
             end=1
-            pkgs=$xbps_pkgs
+            pkgs=("${xbps_pkgs[@]}")
             pkgman="xbps-install -Sy"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             ;;
-        "Arch Linux")
+        "Arch")
             end=1
-            pkgs=$pacman_pkgs
+            pkgs=("$pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
             ;;
         "Debian"|"Ubuntu")
             end=1
-            pkgs=$apt_pkgs
-            pkgman="apt install -y"
+            pkgs=("${apt_pkgs[@]}")
+            pkgman="apt-get install -y"
             ;;
         "FreeBSD")
             install_dir="/usr/local/opt/uredis"
             end=1
-            pkgs=$pkg_pkgs
+            pkgs=("${pkg_pkgs[@]}")
             pkgman="pkg install"
             serviceman="service docker start"
             ;;
         "OpenBSD")
             install_dir="/usr/local/opt/uredis"
             end=1
-            pkgs=$pkg_add_pkgs
+            pkgs=("${pkg_add_pkgs[@]}")
             pkgman="pkg_add"
             serviceman="rcctl set docker on"
             ;;
          *)
             end=0
-            pkgs=$sip_pkgs
+            pkgs=("${sip_pkgs[@]}")
             pkgman="sip add"
     esac
+    local middle
+    local last
+    (( middle = end + 1 ))
+    (( last = end + 2 ))
     if [[ $1 == 0 ]]; then
-        for ((i=0; i<=end; i++)); do
+        for ((i=0; i<=1; i++)); do
+            echo "Installing ${pkgs[i]}..."
             $pkgman "${pkgs[i]}"
         done
     elif [[ $1 == 1 ]]; then
-        local middle=$((end+1))
+        echo "Installing ${pkgs[$middle]}..."
         $pkgman "${pkgs[$middle]}"
     else
-        local last=$((end+2))
+        echo "Installing ${pkgs[$last]}..."
         $pkgman "${pkgs[$last]}"
     fi
 }
@@ -263,7 +271,7 @@ create_client_wrapper() {
 }
 
 setup_docker() {
-    if [[ $os == "Alpine Linux" ]]; then
+    if [[ $os == "Alpine" ]]; then
         addgroup $1 docker
     else
         usermod -aG docker $1
@@ -285,6 +293,7 @@ generate_run_docker_shellscript() {
 }
 
 build_uredis_image_docker() {
+    clear
     echo "Building uRedis image (uredis-img) for Docker..."
     curl -sSf $dockerfile > $(basename $dockerfile)
     unzip -qq -o $(basename $latest_release)
@@ -323,6 +332,7 @@ main() {
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
         install_packages 1
+        print_uredis_logo
         install_uredis_system $user
         create_server_wrapper
         create_client_wrapper
@@ -345,6 +355,7 @@ main() {
         install_packages 2
         setup_docker $user
         build_uredis_image_docker
+        print_redis_logo
         generate_run_docker_shellscript $appname $user
         echo "Done."
         echo

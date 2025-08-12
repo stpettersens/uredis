@@ -20,7 +20,7 @@ a:hover {
 }
 </style>
 <script type="application/javascript">
-  var g_copySetupText = "curl -sSf https://uredis.stpettersen.xyz/setup | bash";
+  var g_copySetupText = "curl -sSf https://uredis.stpettersen.xyz/setup | sudo bash";
   function homelab() {
     var h = "https://";
     var hostname = "uredis.homelab.stpettersen.xyz";
@@ -32,7 +32,7 @@ a:hover {
         document.getElementById("setup_url").innerHTML = setupUrl;
         document.getElementById("setup_url").href = setupUrl;
     }
-    g_copySetupText = "curl -sSf " + h + hostname + "/setup | bash";
+    g_copySetupText = "curl -sSf " + h + hostname + "/setup | sudo bash";
   }
   function copySetup() {
     navigator.clipboard.writeText(g_copySetupText);
@@ -53,7 +53,7 @@ a:hover {
 <pre>Written by Sam Saint-Pettersen &lt;s dot stpettersen at pm dot me&gt;</pre>
 <a id="project_url" href="https://uredis.stpettersen.xyz">https://uredis.stpettersen.xyz</a>
 <p>Install uRedis (<a href="https://github.com/stpettersens/uredis">on GitHub</a>), with the following command on Linux or Unix:</p>
-<pre>curl -sSf <a id="setup_url" href="https://uredis.stpettersen.xyz/setup">https://uredis.stpettersen.xyz/setup</a> | bash</pre>
+<pre>curl -sSf <a id="setup_url" href="https://uredis.stpettersen.xyz/setup">https://uredis.stpettersen.xyz/setup</a> | sudo bash</pre>
 <a href="javascript:copySetup()">Copy to clipboard</a>
 </div>
 </body>
