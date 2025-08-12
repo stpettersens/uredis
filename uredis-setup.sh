@@ -140,7 +140,7 @@ detect_os() {
     os=$(grep NAME /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
     os=$(echo $os | awk '{ print $1 }')
     echo "Detected $os as operating system."
-    sleep 3
+    sleep 1
 }
 
 update_packages() {
@@ -176,8 +176,6 @@ install_packages() {
     python="python3"
     if [[ $1 == 0 ]] || [[ $1 == 1 ]]; then
         echo "Installing required packages..."
-    else
-        echo "Installing Docker..."
     fi
     local end
     local pkgs
@@ -188,7 +186,7 @@ install_packages() {
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             serviceman="rc-update add docker default"
-            start="rc-service docker start"
+            start="service docker start"
             ;;
         "Void")
             end=1
@@ -281,13 +279,13 @@ setup_docker() {
 }
 
 generate_run_docker_shellscript() {
-    echo "#!/bin/sh" > run_uredis_container.sh
-    echo "docker network create ${1}_network" > run_uredis_container.sh
-    echo "docker run --rm --network ${1}_network --name uredis_${1} -h uredis -v ($pwd):/opt/uredis -d uredis_img" >> run_uredis_container.sh
-    echo "ip_address=\$(docker inspect --format {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} uredis_${1})" >> run_uredis_container.sh
-    echo "echo \"APP_NETWORK=${1}_network\" > .env" >> run_uredis_container.sh
-    #echo "echo \"${1##}_REDIS_HOST=${ip_address}\" >> .env" >> run_uredis_container.sh
-    #echo "echo \"${1##}_REDIS_PORT=6379\" >> .env" >> run_uredis_container.sh
+    echo "#!/usr/bin/env bash" > run_uredis_container.sh
+    echo "docker network create ${1}_network" >> run_uredis_container.sh
+    echo "docker run --rm --network ${1}_network --name uredis_${1} -h uredis -v \$(pwd):/opt/uredis -d uredis_img" >> run_uredis_container.sh
+    echo "ipaddress=\$(docker inspect --format \"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}\" uredis_${1})" >> run_uredis_container.sh
+    echo "echo \"APP_NETWORK=${1}_network\" > ../.env" >> run_uredis_container.sh
+    echo "echo \"${1^^}_REDIS_HOST=\$ipaddress\" >> ../.env" >> run_uredis_container.sh
+    echo "echo \"${1^^}_REDIS_PORT=6379\" >> ../.env" >> run_uredis_container.sh
     chown $2:$2 run_uredis_container.sh
     chmod +x run_uredis_container.sh
 }
@@ -300,8 +298,6 @@ build_uredis_image_docker() {
     rm -f $(basename $latest_release)
     if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
         docker build -t uredis_img .
-        rm -f README.md
-        rm -f version.txt
     else
         echo "Could not build Docker image as a PYZ file does not exist!"
         exit 1
@@ -355,13 +351,17 @@ main() {
         install_packages 2
         setup_docker $user
         build_uredis_image_docker
-        print_redis_logo
+        print_uredis_logo
         generate_run_docker_shellscript $appname $user
         echo "Done."
         echo
         echo "An image (uredis-img) has been created for Docker:"
-        echo "Run \"docker image ls\" to see it."
+        echo "Run \"sudo docker image ls\" to see it."
         echo
+        echo "ATTENTION:"
+        echo "You may need to logout first to use Docker as current user."
+        echo
+        echo "Under uredis subdirectory:"
         echo "Run \"./run_uredis_container.sh\" to run an instance of that image."
     fi
     echo

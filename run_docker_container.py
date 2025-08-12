@@ -14,7 +14,7 @@ def create_env_file_for_app(app_name: str = 'default') -> None:
         'docker',
         'inspect',
         '--format',
-        '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}',
+        '"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"',
         f'uredis_{app_name}'
     ],
     capture_output=True,
