@@ -32,6 +32,9 @@ os=""
 # Define the Python interpreter variable, set it later.
 python=""
 
+# Default installation directory (no trailing slash).
+install_dir="/opt/uredis"
+
 # Define the logo.
 logo="https://uredis.homelab.stpettersen.xyz/logo.txt"
 
@@ -41,8 +44,9 @@ latest_release="https://uredis.homelab.stpettersen.xyz/releases/uredis_latest.zi
 # Define the Dockerfile.
 dockerfile="https://uredis.homelab.stpettersen.xyz/Dockerfile"
 
-# Default installation directory (no trailing slash).
-install_dir="/opt/uredis"
+# Define services manager for starting Docker service.
+serviceman="systemctl enable docker"
+start="systemctl start docker"
 
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
@@ -84,6 +88,7 @@ pkg_pkgs=(
     "python"
     "docker"
 )
+set_rc=""
 
 # Define OpenBSD (pkg_info) packages.
 pkg_add_pkgs=(
@@ -153,6 +158,10 @@ update_packages() {
             ;;
         "FreeBSD")
             pkg update
+            if [[ -z $set_rc ]]; then
+                echo "docker_enable=\"YES\"" >> /etc/rc.conf
+                set_rc="1"
+            fi
             ;;
         "OpenBSD")
             pkg_info update
@@ -175,11 +184,14 @@ install_packages() {
             end=2
             pkgs=$apk_pkgs
             pkgman="apk add"
+            serviceman="rc-update add docker default"
+            start="rc-service docker start"
             ;;
         "Void Linux")
             end=1
             pkgs=$xbps_pkgs
             pkgman="xbps-install -Sy"
+            serviceman="ln -sf /etc/sv/docker /var/service/"
             ;;
         "Arch Linux")
             end=1
@@ -192,16 +204,18 @@ install_packages() {
             pkgman="apt install -y"
             ;;
         "FreeBSD")
-            install_dir="/usr/local/opt"
+            install_dir="/usr/local/opt/uredis"
             end=1
             pkgs=$pkg_pkgs
             pkgman="pkg install"
+            serviceman="service docker start"
             ;;
         "OpenBSD")
-            install_dir="/usr/local/opt"
+            install_dir="/usr/local/opt/uredis"
             end=1
             pkgs=$pkg_add_pkgs
             pkgman="pkg_add"
+            serviceman="rcctl set docker on"
             ;;
          *)
             end=0
@@ -209,13 +223,15 @@ install_packages() {
             pkgman="sip add"
     esac
     if [[ $1 == 0 ]]; then
-        for i in {0..end}; do
+        for ((i=0; i<=end; i++)); do
             $pkgman "${pkgs[i]}"
         done
     elif [[ $1 == 1 ]]; then
-        $pkgman "${pkgs[(end+1)]}"
+        local middle=$((end+1))
+        $pkgman "${pkgs[$middle]}"
     else
-        $pkgman "${pkgs[(end+2)]}"
+        local last=$((end+2))
+        $pkgman "${pkgs[$last]}"
     fi
 }
 
@@ -236,23 +252,45 @@ install_uredis_system() {
 
 create_server_wrapper() {
     echo "#!/bin/sh" > /usr/local/bin/uredis-server
-    echo "$python $1/uredis-server.pyz \$@" >> /usr/local/bin/uredis-server
+    echo "$python ${install_dir}/uredis-server.pyz \$@" >> /usr/local/bin/uredis-server
     chmod +x /usr/local/bin/uredis-server
 }
 
 create_client_wrapper() {
     echo "#!/bin/sh" > /usr/local/bin/uredis-client
-    echo "$python $1/uredis-client.pyz \$\@" >> /usr/local/bin/uredis-client
+    echo "$python ${install_dir}/uredis-client.pyz \$@" >> /usr/local/bin/uredis-client
     chmod +x /usr/local/bin/uredis-client
 }
 
-install_uredis_docker() {
-    echo "Installing uRedis on docker..."
+setup_docker() {
+    if [[ $os == "Alpine Linux" ]]; then
+        addgroup $1 docker
+    else
+        usermod -aG docker $1
+    fi
+    $serviceman
+    $start
+}
+
+generate_run_docker_shellscript() {
+    echo "#!/bin/sh" > run_uredis_container.sh
+    echo "docker network create ${1}_network" > run_uredis_container.sh
+    echo "docker run --rm --network ${1}_network --name uredis_${1} -h uredis -v ($pwd):/opt/uredis -d uredis_img" >> run_uredis_container.sh
+    echo "ip_address=\$(docker inspect --format {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} uredis_${1})" >> run_uredis_container.sh
+    echo "echo \"APP_NETWORK=${1}_network\" > .env" >> run_uredis_container.sh
+    #echo "echo \"${1##}_REDIS_HOST=${ip_address}\" >> .env" >> run_uredis_container.sh
+    #echo "echo \"${1##}_REDIS_PORT=6379\" >> .env" >> run_uredis_container.sh
+    chown $2:$2 run_uredis_container.sh
+    chmod +x run_uredis_container.sh
+}
+
+build_uredis_image_docker() {
+    echo "Building uRedis image (uredis-img) for Docker..."
     curl -sSf $dockerfile > $(basename $dockerfile)
     unzip -qq -o $(basename $latest_release)
     rm -f $(basename $latest_release)
     if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
-        docker build -t uredis_img
+        docker build -t uredis_img .
         rm -f README.md
         rm -f version.txt
     else
@@ -267,15 +305,20 @@ main() {
     update_packages
     install_packages 0
     print_uredis_logo
+    mkdir -p uredis
+    cd uredis
     download_uredis_latest
     local install
+    local user
     read -p "Install uRedis on system or on Docker [SYSTEM/docker]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
-        while
-            read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
-            [[ -z $install_dir ]]
-        do true; done
-        local user
+        read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
+        if [[ -z $install_dir ]]; then
+            install_dir="/opt/uredis"
+            if [[ $os == "FreeBSD" ]] || [[ $os == "OpenBSD" ]]; then
+                install_dir="/usr/local/opt/uredis"
+            fi
+        fi
         while [[ -z $user ]]; do
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
@@ -283,18 +326,35 @@ main() {
         install_uredis_system $user
         create_server_wrapper
         create_client_wrapper
+        rm -rf /home/$user/uredis
         echo "Done."
         echo
-        echo "Run uRedis server with: `uredis-server`"
-        echo "Run uRedis client with: `uredis-client`"
-        echo
+        echo "Run uRedis server with: \"uredis-server\""
+        echo "Run uRedis client with: \"uredis-client\""
+
     else
+        while [[ -z $user ]]; do
+            read -p "Enter user who should run the Docker service: " user < /dev/tty
+        done
+        chown -R $user:$user $(pwd)
+        local appname="default"
+        read -p "Enter name for app which will use this instance? [$appname]: " appname < /dev/tty
+        if [[ -z $appname ]]; then
+            appname="default"
+        fi
         install_packages 2
-        install_uredis_docker
+        setup_docker $user
+        build_uredis_image_docker
+        generate_run_docker_shellscript $appname $user
         echo "Done."
+        echo
         echo "An image (uredis-img) has been created for Docker:"
-        echo "Run `docker image ls` to see it."
+        echo "Run \"docker image ls\" to see it."
+        echo
+        echo "Run \"./run_uredis_container.sh\" to run an instance of that image."
     fi
+    echo
+    echo
     exit 0
 }
 
