@@ -44,10 +44,10 @@ RUN echo "python3 /opt/uredis/uredis-client.pyz \$@" >> /usr/local/bin/uredis-cl
 RUN chmod +x /usr/local/bin/uredis-client
 
 # Test uredis-server installed.
-RUN /usr/local/bin/uredis-server --version
+RUN uredis-server --version
 
 # Test uredis-client installed.
-RUN /usr/local/bin/uredis-client --version
+RUN uredis-client --version
 
 # Run μredis server, binding to 0.0.0.0, writing all changes to disk
 # and limiting that DB file to a size of 15GB (15,000,000,000 bytes).
