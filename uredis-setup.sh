@@ -29,20 +29,26 @@
 # Define the OS variable, set later.
 os=""
 
-# Define the Python interpreter variable, set it later.
-python=""
+# Define the Python interpreter.
+python="python3"
+
+# Define the user elevation program, sudo by default.
+sudo="sudo"
 
 # Default installation directory (no trailing slash).
 install_dir="/opt/uredis"
 
+# Define the server root for assets served by this script.
+server="https://uredis.homelab.stpettersen.xyz"
+
 # Define the logo.
-logo="https://uredis.homelab.stpettersen.xyz/logo.txt"
+logo="$server/logo.txt"
 
 # Define the latest release (a symbolic link to the latest file).
-latest_release="https://uredis.homelab.stpettersen.xyz/releases/uredis_latest.zip"
+latest_release="$server/releases/uredis_latest.zip"
 
 # Define the Dockerfile.
-dockerfile="https://uredis.homelab.stpettersen.xyz/Dockerfile"
+dockerfile="$server/Dockerfile"
 
 # Define services manager for starting Docker service.
 serviceman="systemctl enable docker"
@@ -147,14 +153,15 @@ update_packages() {
     echo "Updating package index..."
     case $os in
         "Alpine")
+            sudo="doas" # sudo is replaced by doas on alpine by default.
             alpine_enable_all_repos
             apk update
             ;;
         "Void")
-            xbps-install -Syu
+            xbps-install -Sy
             ;;
         "Arch")
-            pacman -Syu --noconfirm
+            pacman -Sy --noconfirm
             ;;
         "Debian"|"Ubuntu")
             apt-get update -y
@@ -173,7 +180,6 @@ update_packages() {
 }
 
 install_packages() {
-    python="python3"
     if [[ $1 == 0 ]] || [[ $1 == 1 ]]; then
         echo "Installing required packages..."
     fi
@@ -193,6 +199,7 @@ install_packages() {
             pkgs=("${xbps_pkgs[@]}")
             pkgman="xbps-install -Sy"
             serviceman="ln -sf /etc/sv/docker /var/service/"
+            start="sv up docker"
             ;;
         "Arch")
             end=1
@@ -276,6 +283,7 @@ setup_docker() {
     fi
     $serviceman
     $start
+    sleep 3
 }
 
 generate_run_docker_shellscript() {
@@ -356,7 +364,7 @@ main() {
         echo "Done."
         echo
         echo "An image (uredis-img) has been created for Docker:"
-        echo "Run \"sudo docker image ls\" to see it."
+        echo "Run \"$sudo docker image ls\" to see it."
         echo
         echo "ATTENTION:"
         echo "You may need to logout first to use Docker as a non-root user."
