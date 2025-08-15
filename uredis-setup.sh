@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# This script install uRedis from its latest available release
+# This script will install uRedis from its latest available release
 # along with any software packages (e.g. curl, python3, unzip) necessary to extract,
 # install and run the distributed Python PYZ applications (uredis-server and uredis-client).
 # To install uRedis in a similar way on Windows systems, please use uredis-setup.ps1
@@ -359,7 +359,7 @@ main() {
         echo "Run \"sudo docker image ls\" to see it."
         echo
         echo "ATTENTION:"
-        echo "You may need to logout first to use Docker as current user."
+        echo "You may need to logout first to use Docker as a non-root user."
         echo
         echo "Under uredis subdirectory:"
         echo "Run \"./run_uredis_container.sh\" to run an instance of that image."
