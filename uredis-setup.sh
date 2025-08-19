@@ -6,10 +6,11 @@
 # To install uRedis in a similar way on Windows systems, please use uredis-setup.ps1
 # This script works (where Bash exists) with:
 #
-# * Void Linux
 # * Alpine Linux (run curl -sSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash)
+# * Void Linux
 # * Arch Linux and its derivatives (e.g. Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
+# * Fedora/RHEL Linux and its derivatives (e.g. Nobara).
 # * Generic Linux (any other distribution with my package manager SIP)
 # * FreeBSD
 # * OpenBSD
@@ -85,6 +86,14 @@ apt_pkgs=(
     "unzip"
     "python3"
     "docker.io"
+)
+
+# Define Fedora/RHEL (dnf) packages:
+dnf_pkgs=(
+    "curl"
+    "unzip"
+    "python3"
+    "docker"
 )
 
 # Define FreeBSD (pkg) packages.
@@ -166,6 +175,9 @@ update_packages() {
         "Debian"|"Ubuntu")
             apt-get update -y
             ;;
+        "Fedora"|"RHEL")
+            dnf update
+            ;;
         "FreeBSD")
             pkg update
             if [[ -z $set_rc ]]; then
@@ -210,6 +222,11 @@ install_packages() {
             end=1
             pkgs=("${apt_pkgs[@]}")
             pkgman="apt-get install -y"
+            ;;
+        "Fedora"|"RHEL")
+            end=1
+            pkgs("${dnf_pkgs[@]}")
+            pkgman="dnf install"
             ;;
         "FreeBSD")
             install_dir="/usr/local/opt/uredis"
