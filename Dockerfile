@@ -16,7 +16,7 @@ EXPOSE 6379
 # Test Python installed.
 RUN python3 --version
 
-# Copy zipped uredis server application.
+# Create directory for uredis applications.
 RUN mkdir -p /opt/uredis
 WORKDIR /opt/uredis
 VOLUME /opt/uredis
