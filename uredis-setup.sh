@@ -152,30 +152,34 @@ alpine_enable_all_repos() {
 }
 
 detect_os() {
-    os=$(grep NAME /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
+    os=$(grep "^ID=" /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
     os=$(echo $os | awk '{ print $1 }')
-    echo "Detected $os as operating system."
+    pos="${os^}"
+    if [[ $os == "rhel" ]]; then
+        pos="${os^^}"
+    fi
+    echo "Detected $pos as operating system."
     sleep 1
 }
 
 update_packages() {
     echo "Updating package index..."
     case $os in
-        "Alpine")
+        "alpine")
             sudo="doas" # sudo is replaced by doas on alpine by default.
             alpine_enable_all_repos
             apk update
             ;;
-        "Void")
+        "void")
             xbps-install -Sy
             ;;
-        "Arch")
+        "arch")
             pacman -Sy --noconfirm
             ;;
-        "Debian"|"Ubuntu")
+        "debian"|"ubuntu"|"linuxmint"|"zorin")
             apt-get update -y
             ;;
-        "Fedora"|"RHEL")
+        "fedora"|"rhel")
             dnf update
             ;;
         "FreeBSD")
@@ -199,33 +203,33 @@ install_packages() {
     local pkgs
     local pkgman
     case $os in
-        "Alpine")
+        "alpine")
             end=2
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             serviceman="rc-update add docker default"
             start="service docker start"
             ;;
-        "Void")
+        "void")
             end=1
             pkgs=("${xbps_pkgs[@]}")
             pkgman="xbps-install -Sy"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             start="sv up docker"
             ;;
-        "Arch")
+        "arch")
             end=1
-            pkgs=("$pacman_pkgs[@]}")
+            pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
             ;;
-        "Debian"|"Ubuntu")
+        "debian"|"ubuntu"|"linuxmint"|"zorin")
             end=1
             pkgs=("${apt_pkgs[@]}")
             pkgman="apt-get install -y"
             ;;
-        "Fedora"|"RHEL")
+        "fedora"|"rhel")
             end=1
-            pkgs("${dnf_pkgs[@]}")
+            pkgs=("${dnf_pkgs[@]}")
             pkgman="dnf install"
             ;;
         "FreeBSD")
@@ -293,7 +297,7 @@ create_client_wrapper() {
 }
 
 setup_docker() {
-    if [[ $os == "Alpine" ]]; then
+    if [[ $os == "alpine" ]]; then
         addgroup $1 docker
     else
         usermod -aG docker $1
