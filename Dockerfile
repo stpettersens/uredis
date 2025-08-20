@@ -16,7 +16,7 @@ EXPOSE 6379
 # Test Python installed.
 RUN python3 --version
 
-# Copy zipped μredis server application.
+# Copy zipped uredis server application.
 RUN mkdir -p /opt/uredis
 WORKDIR /opt/uredis
 VOLUME /opt/uredis
@@ -49,6 +49,6 @@ RUN uredis-server --version
 # Test uredis-client installed.
 RUN uredis-client --version
 
-# Run μredis server, binding to 0.0.0.0, writing all changes to disk
+# Run uredis server, binding to 0.0.0.0, writing all changes to disk
 # and limiting that DB file to a size of 15GB (15,000,000,000 bytes).
 CMD [ "uredis-server", "--bind", "0.0.0.0", "--max-db", "15000000000", "--update-disk" ]
