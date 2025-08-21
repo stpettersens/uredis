@@ -59,9 +59,9 @@ dockerfile="$server/Dockerfile"
 requirements_txt="$server/requirements.txt"
 
 # Define services manager for starting Docker service.
+start="systemctl start docker"
 serviceman="systemctl enable docker"
 serviceman2=""
-start="systemctl start docker"
 
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
