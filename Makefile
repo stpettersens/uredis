@@ -55,6 +55,9 @@ webserver:
 	uv run python create_uredis_install_script_localhost.py
 	cd localhost && uv run python -m http.server
 
+deploy:
+	uv run python create_uredis_install_script_stpettersen_xyz.py
+
 clean:
 	@echo Cleaning PYZs and ZIPs for server and client...
 	uv run python clear_pyz.py
