@@ -51,6 +51,11 @@ build_docker:
 run_docker:
 	uv run python run_docker_container.py
 
+webserver:
+	# Test install script deployment by hosting from local machine.
+	uv run python create_uredis_install_script_localhost.py
+	cd localhost && uv run python -m http.server
+
 clean:
 	@echo Cleaning PYZs and ZIPs for server and client...
 	uv run python clear_pyz.py

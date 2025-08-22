@@ -10,4 +10,5 @@ version.txt
 *.log
 *.pid
 *.secret_key
-copyparty_sync*
+copyparty*
+localhost
