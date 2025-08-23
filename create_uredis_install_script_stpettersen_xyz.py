@@ -30,7 +30,7 @@ if __name__ == "__main__":
             else:
                 out.append(l)
 
-    with open(os.path.join(_dir, 'setup'), 'w') as f:
+    with open(os.path.join(_dir, 'setup'), 'w', newline='\n') as f:
         for o in out:
             f.write(o)
 

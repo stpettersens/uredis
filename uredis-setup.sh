@@ -163,7 +163,7 @@ detect_os() {
     os=$(grep "^ID=" /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
     os=$(echo $os | awk '{ print $1 }')
     os_name="${os^}"
-    case $os in)
+    case $os in
         "rhel")
             os_name="${os^^}"
             ;;

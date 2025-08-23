@@ -24,7 +24,8 @@ if __name__ == "__main__":
         'redis',
         'tokenizer',
         'tokenizer',
-        'parser'
+        'parser',
+        'v1'
     ]
 
     files: list[str] = [
@@ -62,8 +63,8 @@ if __name__ == "__main__":
             shutil.copy(py, os.path.join("server_app", dirs[i]))
             i += 1
 
-        shutil.copy(os.path.join('v1', 'redis_record.py'), 'server_app')
-        shutil.copy(os.path.join('v1', 'redis_records.py'), 'server_app')
+        shutil.copy(os.path.join('v1', 'redis_record.py'), os.path.join('server_app', 'v1', 'redis_record.py'))
+        shutil.copy(os.path.join('v1', 'redis_records.py'), os.path.join('server_app', 'v1', 'redis_records.py'))
 
         shutil.copy('server__main__.py', os.path.join('server_app', '__main__.py'))
 

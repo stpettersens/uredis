@@ -4,7 +4,7 @@
 import uuid
 from typing import TypeAlias
 
-from redis_record import RedisRecord
+from v1.redis_record import RedisRecord
 
 UUID: TypeAlias = uuid.UUID
 
