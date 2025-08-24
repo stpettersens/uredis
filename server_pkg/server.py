@@ -145,7 +145,7 @@ def load_records(working_dir: str, dump_db: str, colors: bool) -> RedisRecords|N
         if not zipfile.is_zipfile(zipped_db):
             # Fallback to file format version 1
             with open(zipped_db, 'rb') as v1:
-                from v1 import redis_records
+                import redis_records
                 file_format = 1
                 records = pickle.load(v1)
                 print('Data format version:', file_format)
