@@ -48,8 +48,6 @@ if __name__ == "__main__":
                 out.append(l.replace(instructed_url, f"http://{ip_address}:8000"))
             elif l.find(homelab_url) != -1:
                 out.append(l.replace(homelab_url, f"http://{ip_address}:8000"))
-            elif l.find('Dockerfile') != -1:
-                out.append(l.replace('Dockerfile', 'Dockerfile.txt'))
             elif l.find('-sSf') != -1:
                 out.append(l.replace('-sSf', '-sf'))
             else:

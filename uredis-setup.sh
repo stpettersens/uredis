@@ -303,10 +303,12 @@ install_uredis_system() {
 install_uredis_service() {
     echo "Installing uRedis as service..."
     mkdir -p $install_dir
+    cd uredis
     mv $(basename $latest_release) $install_dir
     cd $install_dir
     unzip -qq -o $install_dir/$(basename $latest_release)
     rm -f $install_dir/$(basename $latest_release)
+    cd ..
     case $os in
         freebsd)
             pw useradd uredis -d /nonexistent
@@ -320,7 +322,7 @@ install_uredis_service() {
             useradd uredis
             curl -sSf $services/uredis_openbsd > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
-            touch /opt/uredis/uredis.pid
+            doas -u uredis touch /opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             rcctl set uredis user uredis
             rcctl start uredis
@@ -350,6 +352,7 @@ install_uredis_service() {
             systemctl daemon-reload
             ;;
     esac
+    rm -rf /home/$1/uredis
 }
 
 create_server_wrapper() {
@@ -471,7 +474,11 @@ main() {
         if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
             install_dir="/usr/local/opt/uredis"
         fi
-        install_uredis_service
+        while [[ -z $user ]]; do
+            read -p "Enter user for temp directory: " user < /dev/tty
+        done
+        install_packages 1
+        install_uredis_service $user
         create_server_wrapper
         create_client_wrapper
         print_uredis_logo
