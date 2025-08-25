@@ -1,0 +1,5 @@
+# Run uredis-server as an OpenRC service.
+command="/usr/bin/env python3 /opt/uredis/uredis-server.pyz"
+command_args="-z 15000000000 --daemon-safe"
+command_background=true
+pidfile="/opt/uredis/uredis.pid"

@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=10
 User=uredis
-ExecStart=/usr/bin/env python3 /opt/uredis/uredis-server.pyz -z 2000000000 --daemon-safe
+ExecStart=/usr/bin/env python3 /opt/uredis/uredis-server.pyz -z 15000000000 --daemon-safe
 
 [Install]
 WantedBy=multi-user.target

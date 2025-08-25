@@ -49,8 +49,8 @@ logo="$server/logo.txt"
 # Define the latest release (a symbolic link to the latest file).
 latest_release="$server/releases/uredis_latest.zip"
 
-# Define the services package to install uRedis as a service.
-services_pkg="$server/uredis_services.zip"
+# Define the services directory.
+services="$server/services"
 
 # Define the Dockerfile.
 dockerfile="$server/Dockerfile"
@@ -119,7 +119,6 @@ pkg_add_pkgs=(
     "python"
     "docker"
 )
-#set_rc=""
 
 # Define SIP (sip) packages.
 sip_pkgs=(
@@ -201,10 +200,6 @@ update_packages() {
         "freebsd")
             sudo="doas"
             pkg update
-            #if (($1==2)) && [[ -z $set_rc ]]; then
-                #echo "docker_enable=\"YES\"" >> /etc/rc.conf
-                #set_rc="1"
-            #fi
             ;;
         "openbsd")
             sudo="doas"
@@ -307,51 +302,54 @@ install_uredis_system() {
 
 install_uredis_service() {
     echo "Installing uRedis as service..."
-    unzip -qq -o $(basename $latest_release)
-    curl -sSf $service_pkg > $(basename $services_pkg)
-    unzip -qq -o $(basename $services_pkg)
-    rm -f $(basename $services_pkg)
-    mkdir -p /opt/uredis
-    cp uredis/uredis-server.pyz /opt/uredis
-    cp uredis/uredis-client.pyz /opt/uredis
-    rm -rf uredis
+    mkdir -p $install_dir
+    mv $(basename $latest_release) $install_dir
+    cd $install_dir
+    unzip -qq -o $install_dir/$(basename $latest_release)
+    rm -f $install_dir/$(basename $latest_release)
     case $os in
         freebsd)
-            pw useradd uredis
-            chown -R uredis:uredis /opt/uredis
-            cp uredis_services/freebsd/uredis_freebsd /etc/rc.d/uredis
+            pw useradd uredis -d /nonexistent
+            curl -sSf $services/uredis_freebsd > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
+            chown -R uredis:uredis $install_dir
             service uredis onestart
             service uredis enable
             ;;
         openbsd)
             useradd uredis
-            cp uredis_services/openbsd/uredis_openbsd /etc/rc.d/uredis
+            curl -sSf $services/uredis_openbsd > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
             touch /opt/uredis/uredis.pid
-            chown -R uredis:uredis /opt/uredis
+            chown -R uredis:uredis $install_dir
             rcctl set uredis user uredis
             rcctl start uredis
             rcctl enable uredis
             ;;
         alpine)
-            echo "TODO Install service for Alpine."
-            exit 1
+            adduser -H uredis
+            curl -sSf $services/uredis_openrc > /etc/init.d/uredis
+            chmod +x /etc/init.d/uredis
+            chown -R uredis:uredis $install_dir
+            rc-update add uredis default
+            service uredis start
             ;;
         void)
-            echo "TODO Install service for Void."
-            exit 1
+            useradd -M uredis
+            curl -sSf $services/uredis_runit > /etc/sv/uredis
+            chown -R uredis:uredis $install_dir
+            ln -sf /etc/sv/uredis /var/service/
+            sv up uredis
             ;;
         *) # Any Linux distro using SystemD
-            useradd -m uredis
-            cp uredis_services/systemd/uredis_systemd.service /etc/systemd/uredis.service
-            chown -R uredis:uredis /opt/uredis
+            useradd -M uredis
+            curl -sSf $services/uredis_systemd > /etc/systemd/uredis.service
+            chown -R uredis:uredis $install_dir
             systemctl enable uredis
             systemctl start uredis
             systemctl daemon-reload
             ;;
     esac
-    rm -rf uredis_services
 }
 
 create_server_wrapper() {
@@ -402,7 +400,7 @@ build_uredis_image_docker() {
     if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
         docker build -t uredis_img .
     else
-        echo "Could not build Docker image as a PYZ file does not exist!"
+        echo "Could not build Docker image as 1 or more PYZ files do not exist!"
         exit 1
     fi
 }
@@ -423,7 +421,7 @@ main() {
         read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
         if [[ -z $install_dir ]]; then
             install_dir="/opt/uredis"
-            if [[ $os == "FreeBSD" ]] || [[ $os == "OpenBSD" ]]; then
+            if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
                 install_dir="/usr/local/opt/uredis"
             fi
         fi
@@ -455,7 +453,6 @@ main() {
         setup_docker $user
         build_uredis_image_docker
         generate_run_docker_shellscript $appname $user
-        #update_packages 2
         print_uredis_logo
         echo "Done."
         echo
@@ -470,6 +467,10 @@ main() {
     else
         # Install uRedis as a service...
         cd ..
+        install_dir="/opt/uredis"
+        if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
+            install_dir="/usr/local/opt/uredis"
+        fi
         install_uredis_service
         create_server_wrapper
         create_client_wrapper

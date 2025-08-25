@@ -41,7 +41,7 @@ def install_service(number: int) -> int:
         os.system('mkdir -p /opt/uredis')
         shutil.copy('uredis-server.pyz', '/opt/uredis/uredis-server.pyz')
         shutil.copy('uredis-client.pyz', '/opt/uredis/uredis-client.pyz')
-        shutil.copy('systemd/uredis_systemd.service', '/etc/systemd/system/uredis.service')
+        shutil.copy('systemd/uredis_systemd', '/etc/systemd/system/uredis.service')
         shutil.copy('uredis-server', '/usr/bin/uredis-server')
         shutil.copy('uredis-client', '/usr/bin/uredis-client')
         os.system('chmod +x /usr/bin/uredis-server')
