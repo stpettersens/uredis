@@ -6,4 +6,4 @@ lockfile="/var/lock/uredis.lock"
 exec 200>"$lockfile"
 exec flock -n 200 || exit 0
 
-exec chpst -u redis python3 /opt/uredis/uredis-server.pyz -z 15000000000 --daemon-safe --no-pid
+exec chpst -u redis /usr/local/bin/uredis-service.sh

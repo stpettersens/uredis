@@ -342,10 +342,10 @@ install_uredis_service() {
             mkdir -p /etc/sv/uredis
             curl -sSf $services/uredis_run_runit > /etc/sv/uredis/run
             #curl -sSf $services/uredis-flock_runit.sh > /usr/local/bin/uredis-flock.sh
-            #curl -sSf $services/uredis-service_runit.sh > /usr/local/bin/uredis-service.sh
+            curl -sSf $services/uredis-service_runit.sh > /usr/local/bin/uredis-service.sh
             chmod +x /etc/sv/uredis/run
             #chmod +x /usr/local/bin/uredis-flock.sh
-            #chmod +x /usr/local/bin/uredis-service.sh
+            chmod +x /usr/local/bin/uredis-service.sh
             chown -R uredis:uredis $install_dir
             ln -sf /etc/sv/uredis /var/service/
             sv up uredis
