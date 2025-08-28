@@ -6,4 +6,4 @@ lockfile="/var/lock/uredis.lock"
 exec 200>"$lockfile"
 exec flock -n 200 || exit 0
 
-exec chpst -u redis /usr/local/bin/uredis-service.sh
+exec chpst -u uredis /usr/local/bin/uredis-service.sh
