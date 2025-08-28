@@ -314,6 +314,7 @@ install_uredis_service() {
             pw useradd uredis -d /nonexistent
             curl -sSf $services/uredis_freebsd > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
+            doas -u uredis touch /usr/local/opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             service uredis onestart
             service uredis enable
@@ -322,7 +323,7 @@ install_uredis_service() {
             useradd uredis
             curl -sSf $services/uredis_openbsd > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
-            doas -u uredis touch /opt/uredis/uredis.pid
+            doas -u uredis touch /usr/local/opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             rcctl set uredis user uredis
             rcctl start uredis
@@ -338,7 +339,13 @@ install_uredis_service() {
             ;;
         void)
             useradd -M uredis
-            curl -sSf $services/uredis_runit > /etc/sv/uredis
+            mkdir -p /etc/sv/uredis
+            curl -sSf $services/uredis_run_runit > /etc/sv/uredis/run
+            #curl -sSf $services/uredis-flock_runit.sh > /usr/local/bin/uredis-flock.sh
+            #curl -sSf $services/uredis-service_runit.sh > /usr/local/bin/uredis-service.sh
+            chmod +x /etc/sv/uredis/run
+            #chmod +x /usr/local/bin/uredis-flock.sh
+            #chmod +x /usr/local/bin/uredis-service.sh
             chown -R uredis:uredis $install_dir
             ln -sf /etc/sv/uredis /var/service/
             sv up uredis
@@ -346,6 +353,7 @@ install_uredis_service() {
         *) # Any Linux distro using SystemD
             useradd -M uredis
             curl -sSf $services/uredis_systemd > /etc/systemd/uredis.service
+            sudo -u uredis touch /opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             systemctl enable uredis
             systemctl start uredis
