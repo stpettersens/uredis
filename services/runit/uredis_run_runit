@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Run ("run") script for uredis service for runit.
-# /etc/sv/uredis/run
-exec chpst -u uredis /usr/local/bin/uredis-service.sh
