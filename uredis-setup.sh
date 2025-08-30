@@ -172,9 +172,29 @@ detect_os() {
         "openbsd")
             os_name="OpenBSD"
             ;;
+        "artix")
+            echo "Detected Artix as operating system."
+            local initsys
+            while [[ -z $initsys ]]; do
+                read -p "Which init system are you using (openrc/runit/dinit/s6): " initsys < /dev/tty
+                initsys="${initsys,,}"
+                # Check a valid init system was set:
+                case $initsys in
+                    "openrc"|"runit"|"dinit"|"s6")
+                        os="artix-${initsys}"
+                        ;;
+                    *)
+                        unset initsys
+                        ;;
+                esac
+            done
+            sleep 1
+            ;;
     esac
-    echo "Detected $os_name as operating system."
-    sleep 1
+    if [[ $os_name != "Artix" ]]; then
+        echo "Detected $os_name as operating system."
+        sleep 1
+    fi
 }
 
 update_packages() {
@@ -188,7 +208,7 @@ update_packages() {
         "void")
             xbps-install -Sy
             ;;
-        "arch")
+        "arch"|"artix-openrc"|"artix-runit"|"artix-dinit"|"artix-s6")
             pacman -Sy --noconfirm
             ;;
         "debian"|"ubuntu"|"linuxmint"|"zorin")
@@ -224,10 +244,24 @@ install_packages() {
             serviceman="rc-update add docker default"
             start="service docker start"
             ;;
+        "artix-openrc")
+            end=1
+            pkgs=("${pacman_pkgs[@]}")
+            pkgman="pacman -Sy --noconfirm"
+            serviceman="rc-update add docker default"
+            start="service docker start"
+            ;;
         "void")
             end=1
             pkgs=("${xbps_pkgs[@]}")
             pkgman="xbps-install -Sy"
+            serviceman="ln -sf /etc/sv/docker /var/service/"
+            start="sv up docker"
+            ;;
+        "artix-runit")
+            end=1
+            pkgs=("${pacman_pkgs[@]}")
+            pkgman="pacman -Sy --noconfirm"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             start="sv up docker"
             ;;
@@ -247,7 +281,6 @@ install_packages() {
             pkgman="dnf install"
             ;;
         "freebsd")
-            install_dir="/usr/local/opt/uredis"
             end=1
             pkgs=("${pkg_pkgs[@]}")
             pkgman="pkg install"
@@ -255,7 +288,6 @@ install_packages() {
             serviceman2="service docker enable"
             ;;
         "openbsd")
-            install_dir="/usr/local/opt/uredis"
             end=1
             pkgs=("${pkg_add_pkgs[@]}")
             pkgman="pkg_add"
@@ -310,7 +342,7 @@ install_uredis_service() {
     rm -f $install_dir/$(basename $latest_release)
     cd ..
     case $os in
-        freebsd)
+        "freebsd")
             pw useradd uredis -d /nonexistent
             curl -sSf $services/uredis_freebsd.sh > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
@@ -319,7 +351,7 @@ install_uredis_service() {
             service uredis onestart
             service uredis enable
             ;;
-        openbsd)
+        "openbsd")
             useradd uredis
             curl -sSf $services/uredis_openbsd.sh > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
@@ -329,7 +361,7 @@ install_uredis_service() {
             rcctl start uredis
             rcctl enable uredis
             ;;
-        alpine)
+        "alpine"|"artix-openrc")
             adduser -H uredis
             curl -sSf $services/uredis_openrc.sh > /etc/init.d/uredis
             chmod +x /etc/init.d/uredis
@@ -337,7 +369,7 @@ install_uredis_service() {
             rc-update add uredis default
             service uredis start
             ;;
-        void)
+        "void"|"artix-runit")
             useradd -M uredis
             mkdir -p /etc/sv/uredis
             curl -sSf $services/uredis_run_runit.sh > /etc/sv/uredis/run

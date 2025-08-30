@@ -51,6 +51,9 @@ build_docker:
 run_docker:
 	uv run python scripts/run_docker_container.py
 
+update:
+	@copyparty_sync
+
 webserver:
 	uv run python create_uredis_install_script_localhost.py
 	cd localhost && uv run python -m http.server
