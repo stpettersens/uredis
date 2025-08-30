@@ -1,2 +1,0 @@
-#!/bin/sh
-python3 /opt/uredis/uredis-server.pyz $@

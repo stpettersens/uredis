@@ -312,7 +312,7 @@ install_uredis_service() {
     case $os in
         freebsd)
             pw useradd uredis -d /nonexistent
-            curl -sSf $services/uredis_freebsd > /etc/rc.d/uredis
+            curl -sSf $services/uredis_freebsd.sh > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
             doas -u uredis touch /usr/local/opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
@@ -321,7 +321,7 @@ install_uredis_service() {
             ;;
         openbsd)
             useradd uredis
-            curl -sSf $services/uredis_openbsd > /etc/rc.d/uredis
+            curl -sSf $services/uredis_openbsd.sh > /etc/rc.d/uredis
             chmod +x /etc/rc.d/uredis
             doas -u uredis touch /usr/local/opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
@@ -331,7 +331,7 @@ install_uredis_service() {
             ;;
         alpine)
             adduser -H uredis
-            curl -sSf $services/uredis_openrc > /etc/init.d/uredis
+            curl -sSf $services/uredis_openrc.sh > /etc/init.d/uredis
             chmod +x /etc/init.d/uredis
             chown -R uredis:uredis $install_dir
             rc-update add uredis default
@@ -340,19 +340,15 @@ install_uredis_service() {
         void)
             useradd -M uredis
             mkdir -p /etc/sv/uredis
-            curl -sSf $services/uredis_run_runit > /etc/sv/uredis/run
-            #curl -sSf $services/uredis-flock_runit.sh > /usr/local/bin/uredis-flock.sh
-            curl -sSf $services/uredis-service_runit.sh > /usr/local/bin/uredis-service.sh
+            curl -sSf $services/uredis_run_runit.sh > /etc/sv/uredis/run
             chmod +x /etc/sv/uredis/run
-            #chmod +x /usr/local/bin/uredis-flock.sh
-            chmod +x /usr/local/bin/uredis-service.sh
             chown -R uredis:uredis $install_dir
             ln -sf /etc/sv/uredis /var/service/
             sv up uredis
             ;;
         *) # Any Linux distro using SystemD
             useradd -M uredis
-            curl -sSf $services/uredis_systemd > /etc/systemd/uredis.service
+            curl -sSf $services/uredis_systemd.sh > /etc/systemd/uredis.service
             sudo -u uredis touch /opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             systemctl enable uredis
