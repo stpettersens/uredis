@@ -37,6 +37,7 @@ if __name__ == "__main__":
     shutil.copy(os.path.join('services', 'systemd', 'uredis_systemd.sh'), os.path.join(_dir, 'services'))
     shutil.copy(os.path.join('services', 'openrc', 'uredis_openrc.sh'), os.path.join(_dir, 'services'))
     shutil.copy(os.path.join('services', 'runit', 'uredis_run_runit.sh'), os.path.join(_dir, 'services'))
+    shutil.copy(os.path.join('services', 's6', 'uredis_run_s6.sh'), os.path.join(_dir, 'services'))
 
     for f in glob.glob("*.zip"):
         shutil.copy(f, os.path.join(_dir, 'releases', 'uredis_latest.zip'))

@@ -242,14 +242,14 @@ install_packages() {
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             serviceman="rc-update add docker default"
-            start="service docker start"
+            start="rc-service docker start"
             ;;
         "artix-openrc")
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
             serviceman="rc-update add docker default"
-            start="service docker start"
+            start="rc-service docker start"
             ;;
         "void")
             end=1
@@ -264,6 +264,12 @@ install_packages() {
             pkgman="pacman -Sy --noconfirm"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             start="sv up docker"
+            ;;
+        "artix-s6")
+            end=1
+            pkgs=("${pacman_pkgs[@]}")
+            pkgman="pacman -Sy --noconfirm"
+            serviceman="ln -s /etc/s6/docker /service/docker"
             ;;
         "arch")
             end=1
@@ -362,12 +368,16 @@ install_uredis_service() {
             rcctl enable uredis
             ;;
         "alpine"|"artix-openrc")
-            adduser -H uredis
+            if [[ $os == "alpine" ]]; then
+                adduser -H uredis
+            else
+                useradd -M uredis
+            fi
             curl -sSf $services/uredis_openrc.sh > /etc/init.d/uredis
             chmod +x /etc/init.d/uredis
             chown -R uredis:uredis $install_dir
             rc-update add uredis default
-            service uredis start
+            rc-service uredis start
             ;;
         "void"|"artix-runit")
             useradd -M uredis
@@ -377,6 +387,14 @@ install_uredis_service() {
             chown -R uredis:uredis $install_dir
             ln -sf /etc/sv/uredis /var/service/
             sv up uredis
+            ;;
+        "artix-s6")
+            usermod -M uredis
+            mkdir -p /etc/s6/uredis
+            curl -sSf $services/uredis_run_s6.sh > /etc/s6/uredis/run
+            chmod +x /etc/s6/uredis/run
+            chown -R uredis:uredis $install_dir
+            ln -s /etc/s6/uredis /service/uredis
             ;;
         *) # Any Linux distro using SystemD
             useradd -M uredis
@@ -478,7 +496,7 @@ main() {
         echo "Run uRedis server with: \"uredis-server\""
         echo "Run uRedis client with: \"uredis-client\""
 
-    elif [[ ${install,} == 'docker' ]]; then
+    elif [[ ${install,,} == 'docker' ]]; then
         while [[ -z $user ]]; do
             read -p "Enter user who should run the Docker service: " user < /dev/tty
         done
@@ -503,8 +521,7 @@ main() {
         echo
         echo "Under uredis subdirectory:"
         echo "Run \"./run_uredis_container.sh\" to run an instance of that image."
-    else
-        # Install uRedis as a service...
+    elif [[ ${install,,} == "service" ]]; then
         cd ..
         install_dir="/opt/uredis"
         if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
@@ -522,6 +539,8 @@ main() {
         echo
         echo "uRedis has been installed as a service on $os_name."
         echo "It has been configured to run now and on system startup."
+    else
+        main
     fi
     echo
     echo
