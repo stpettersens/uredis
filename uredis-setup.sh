@@ -8,7 +8,7 @@
 #
 # * Alpine Linux (run curl -sSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash)
 # * Void Linux
-# * Arch Linux and its derivatives (e.g. Garuda, CachyOS).
+# * Arch Linux and its derivatives (e.g. Artix, Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
 # * Fedora/RHEL Linux and its derivatives (e.g. Nobara).
 # * Generic Linux (any other distribution with my package manager SIP)
@@ -32,7 +32,7 @@ os=""
 os_name=""
 
 # Define the Python interpreter.
-python="python3"
+python="python3" # TODO This variable might not be necessary.
 
 # Define the user elevation program, sudo by default.
 sudo="sudo"
@@ -58,18 +58,22 @@ dockerfile="$server/Dockerfile"
 # Define the requirements.txt file for optional dependencies.
 requirements_txt="$server/requirements.txt"
 
+# Define the server application main file with opt dependencies.
+server_main_opt_deps="$server/server__main__opt_deps.py"
+
 # Define services manager for starting Docker service.
 start="systemctl start docker"
 serviceman="systemctl enable docker"
-serviceman2=""
+serviceman2="" # set as necessary later.
 
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
-    "coreutils"
+    #"coreutils" not necessary as basename is bash builtin, TODO remove this.
     "curl"
     "unzip"
     "python3"
     "docker"
+    "uv"
 )
 
 # Define Void Linux (xbps) packages:
@@ -78,17 +82,19 @@ xbps_pkgs=(
     "unzip"
     "python3"
     "docker"
+    "uv"
 )
 
-# Define Arch Linux (pacman) packages:
+# Define Arch/Artix, etc. (pacman) packages:
 pacman_pkgs=(
     "curl"
     "unzip"
     "python"
     "docker"
+    "uv"
 )
 
-# Define Ubuntu (apt) packages:
+# Define Debian/Ubuntu, etc. (apt) packages:
 apt_pkgs=(
     "curl"
     "unzip"
@@ -102,6 +108,7 @@ dnf_pkgs=(
     "unzip"
     "python3"
     "docker"
+    "uv"
 )
 
 # Define FreeBSD (pkg) packages.
@@ -190,6 +197,10 @@ detect_os() {
             done
             sleep 1
             ;;
+        *)
+            os="other"
+            os_name="Other OS"
+            ;;
     esac
     if [[ $os_name != "Artix" ]]; then
         echo "Detected $os_name as operating system."
@@ -208,7 +219,7 @@ update_packages() {
         "void")
             xbps-install -Sy
             ;;
-        "arch"|"artix-openrc"|"artix-runit"|"artix-dinit"|"artix-s6")
+        "arch"|"artix-openrc"|"artix-runit"|"artix-dinit"|"artix-s6"|"garuda"|"cachyos")
             pacman -Sy --noconfirm
             ;;
         "debian"|"ubuntu"|"linuxmint"|"zorin")
@@ -238,7 +249,7 @@ install_packages() {
     local pkgman
     case $os in
         "alpine")
-            end=2
+            end=1 # was 2, TODO remove comment.
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             serviceman="rc-update add docker default"
@@ -271,7 +282,7 @@ install_packages() {
             pkgman="pacman -Sy --noconfirm"
             serviceman="ln -s /etc/s6/docker /service/docker"
             ;;
-        "arch")
+        "arch"|"garuda"|"cachyos")
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
@@ -307,8 +318,10 @@ install_packages() {
     esac
     local middle
     local last
+    local uv
     (( middle = end + 1 ))
     (( last = end + 2 ))
+    (( uv = end + 3 ))
     if [[ $1 == 0 ]]; then
         for ((i=0; i<=1; i++)); do
             echo "Installing ${pkgs[i]}..."
@@ -317,15 +330,43 @@ install_packages() {
     elif [[ $1 == 1 ]]; then
         echo "Installing ${pkgs[$middle]}..."
         $pkgman "${pkgs[$middle]}"
-    else
+    elif [[ $1 == 2 ]]; then
         echo "Installing ${pkgs[$last]}..."
         $pkgman "${pkgs[$last]}"
+    elif [[ $1 == 3 ]]; then
+        case $os in
+            "debian"|"ubuntu"|"linuxmint"|"zorin"|"freebsd"|"openbsd"|"other")
+                install_uv_via_script $2
+                ;;
+            *)
+                echo "Installing ${pkgs[$uv]}..."
+                $pkgman "${pkgs[$uv]}"
+                ;;
+        esac
+    else
+        # We should never get here!
+        echo "Invalid package section."
+        exit 1
     fi
 }
 
 download_uredis_latest() {
     echo "Downloading latest uRedis release..."
     curl -sSf $latest_release > $(basename $latest_release)
+}
+
+install_uv_via_script() {
+    # This is a fallback, generally prefer to install uv
+    # with the system's package manager.
+    echo "Installing uv via script..."
+    if [[ $os == "alpine" ]] || [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
+        curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
+    else
+        curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
+    fi
+    sleep 3
+    uv --version # Check installed version after install.
+    clear
 }
 
 install_uredis_system() {
@@ -397,9 +438,9 @@ install_uredis_service() {
             ln -s /etc/s6/uredis /service/uredis
             ;;
         *) # Any Linux distro using SystemD
+            echo "Installing for systemd..." # !!!
             useradd -M uredis
             curl -sSf $services/uredis_systemd.sh > /etc/systemd/uredis.service
-            sudo -u uredis touch /opt/uredis/uredis.pid
             chown -R uredis:uredis $install_dir
             systemctl enable uredis
             systemctl start uredis
@@ -452,7 +493,6 @@ build_uredis_image_docker() {
     clear
     echo "Building uRedis image (uredis-img) for Docker..."
     curl -sSf $dockerfile > $(basename $dockerfile)
-    unzip -qq -o $(basename $latest_release)
     rm -f $(basename $latest_release)
     if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
         docker build -t uredis_img .
@@ -467,6 +507,52 @@ main() {
     detect_os
     update_packages 0
     install_packages 0
+    initial
+}
+
+# !TODO This will be activated with --os <os> switch.
+# e.g. uredis-setup.sh --os ubuntu
+main_set_os() {
+    os=$1
+    os_name=${os^}
+    echo "Operating system is set as $os_name."
+    sleep 2
+    clear
+    start_prompt
+    update_packages 0
+    install_packages 0
+    initial
+}
+
+install_opt_dependencies_prompt() {
+    local optdeps
+    read -p "Install optional dependencies to support INFO command (N/y): " optdeps < /dev/tty
+    if [[ -z $optdeps ]] || [[ ${optdeps,,} == "n" ]]; then
+        if [[ $2 == "docker" ]]; then
+            unzip -qq -o $(basename $latest_release) # Extract zip.
+        fi
+        return # Do not install optional dependencies.
+    fi
+    if [[ $2 == "docker" ]]; then
+        # Extract zip.
+        unzip -qq -o $(basename $latest_release)
+    fi
+    # Install uv.
+    install_packages 3 $1
+    # Extract server application pyz.
+    unzip -qq uredis-server.pyz -d server_app
+    rm -f uredis-server.pyz
+    # Install optional dependencies with uv.
+    curl -sSf $requirements_txt > $(basename $requirements_txt)
+    mkdir -p server_app/dependencies
+    uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
+    # Repackage with included dependencies.
+    curl -sSf $server_main_opt_deps > server_app/__main__.py
+    uv run python -m zipapp server_app --output uredis-server.pyz --main __main__:main
+}
+
+initial() {
+    clear
     print_uredis_logo
     mkdir -p uredis
     cd uredis
@@ -487,6 +573,7 @@ main() {
         done
         install_packages 1
         install_uredis_system $user
+        install_opt_dependencies_prompt $user "system"
         create_server_wrapper
         create_client_wrapper
         rm -rf /home/$user/uredis
@@ -507,8 +594,9 @@ main() {
             appname="default"
         fi
         install_packages 2
+        install_opt_dependencies_prompt $user "docker"
         setup_docker $user
-        build_uredis_image_docker
+        build_uredis_image_docker $user
         generate_run_docker_shellscript $appname $user
         print_uredis_logo
         echo "Done."
@@ -532,6 +620,7 @@ main() {
         done
         install_packages 1
         install_uredis_service $user
+        install_opt_dependencies_prompt $user "service"
         create_server_wrapper
         create_client_wrapper
         print_uredis_logo
@@ -540,7 +629,7 @@ main() {
         echo "uRedis has been installed as a service on $os_name."
         echo "It has been configured to run now and on system startup."
     else
-        main
+        initial
     fi
     echo
     echo
