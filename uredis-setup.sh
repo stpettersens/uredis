@@ -11,9 +11,10 @@
 # * Arch Linux and its derivatives (e.g. Artix, Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
 # * Fedora/RHEL Linux and its derivatives (e.g. Nobara).
-# * Generic Linux (any other distribution with my package manager SIP)
-# * FreeBSD
-# * OpenBSD
+# * SUSE/OpenSUSE Linux.
+# * Generic Linux (any other distribution with my package manager SIP).
+# * FreeBSD.
+# * OpenBSD.
 #
 # Usage:
 # ------------------------------------------------------------------
@@ -32,7 +33,7 @@ os=""
 os_name=""
 
 # Define the Python interpreter.
-python="python3" # TODO This variable might not be necessary.
+python="python3"
 
 # Define the user elevation program, sudo by default.
 sudo="sudo"
@@ -66,9 +67,12 @@ start="systemctl start docker"
 serviceman="systemctl enable docker"
 serviceman2="" # set as necessary later.
 
+# Global switch overrides.
+pkgmnr=""
+initsystem=""
+
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
-    #"coreutils" not necessary as basename is bash builtin, TODO remove this.
     "curl"
     "unzip"
     "python3"
@@ -127,11 +131,27 @@ pkg_add_pkgs=(
     "docker"
 )
 
+# SUSE/OpenSUSE packages.
+zypper_pkgs=(
+    "curl"
+    "unzip"
+    "python3"
+    "docker"
+)
+
 # Define SIP (sip) packages.
 sip_pkgs=(
     "unzip"
     "python"
     "docker"
+)
+
+# Homebrew (e.g. Darwin) packages.
+brew_pkgs=(
+    "unzip"
+    "python@3.13"
+    "docker"
+    "uv"
 )
 
 print_uredis_logo() {
@@ -170,8 +190,14 @@ detect_os() {
     os=$(echo $os | awk '{ print $1 }')
     os_name="${os^}"
     case $os in
-        "rhel")
+        "rhel"|"sles")
             os_name="${os^^}"
+            ;;
+        "opensuse-tumbleweed")
+            os_name="OpenSUSE Tumbleweed"
+            ;;
+        "opensuse-leap")
+            os_name="OpenSUSE Leap"
             ;;
         "freebsd")
             os_name="FreeBSD"
@@ -210,6 +236,41 @@ detect_os() {
 
 update_packages() {
     echo "Updating package index..."
+    if [[ -n $pkgmnr ]]; then
+        case $pkgmr in
+            "apk")
+                sudo="doas"
+                alpine_enable_all_repos
+                apk update
+                ;;
+            "xbps")
+                xbps-install -Sy
+                ;;
+            "pacman")
+                pacman -Sy --no-confirm
+                ;;
+            "apt-get")
+                apt-get update -y
+                ;;
+             "dnf")
+                dnf update
+                ;;
+             "zypper")
+                zypper refresh
+                ;;
+             "pkg")
+                pkg update
+                ;;
+             "pkg_info")
+                pkg_info update
+                ;;
+             "homebrew"|"brew")
+                brew update
+                ;;
+        esac
+        clear
+        return
+    fi
     case $os in
         "alpine")
             sudo="doas" # sudo is replaced by doas on alpine by default.
@@ -228,6 +289,9 @@ update_packages() {
         "fedora"|"rhel")
             dnf update
             ;;
+        "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+            zypper refresh
+            ;;
         "freebsd")
             sudo="doas"
             pkg update
@@ -235,6 +299,9 @@ update_packages() {
         "openbsd")
             sudo="doas"
             pkg_info update
+            ;;
+        "darwin")
+            brew update
             ;;
     esac
     clear
@@ -247,11 +314,13 @@ install_packages() {
     local end
     local pkgs
     local pkgman
+    local pm
     case $os in
         "alpine")
             end=1 # was 2, TODO remove comment.
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
+            pm="apk"
             serviceman="rc-update add docker default"
             start="rc-service docker start"
             ;;
@@ -259,6 +328,7 @@ install_packages() {
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
+            pm="pacman"
             serviceman="rc-update add docker default"
             start="rc-service docker start"
             ;;
@@ -266,6 +336,7 @@ install_packages() {
             end=1
             pkgs=("${xbps_pkgs[@]}")
             pkgman="xbps-install -Sy"
+            pm="xbps"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             start="sv up docker"
             ;;
@@ -273,6 +344,7 @@ install_packages() {
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
+            pm="pacman"
             serviceman="ln -sf /etc/sv/docker /var/service/"
             start="sv up docker"
             ;;
@@ -280,27 +352,40 @@ install_packages() {
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
+            pm="pacman"
             serviceman="ln -s /etc/s6/docker /service/docker"
             ;;
         "arch"|"garuda"|"cachyos")
             end=1
             pkgs=("${pacman_pkgs[@]}")
             pkgman="pacman -Sy --noconfirm"
+            pm="pacman"
+            serviceman="service enable docker"
+            start="service start docker"
             ;;
         "debian"|"ubuntu"|"linuxmint"|"zorin")
             end=1
             pkgs=("${apt_pkgs[@]}")
+            pm="apt-get"
             pkgman="apt-get install -y"
             ;;
         "fedora"|"rhel")
             end=1
             pkgs=("${dnf_pkgs[@]}")
+            pm="dnf"
             pkgman="dnf install"
+            ;;
+        "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+            end=1
+            pkgs=($"${zypper_pkgs[@]}")
+            pm="zypper"
+            pkgman="zypper -n install"
             ;;
         "freebsd")
             end=1
             pkgs=("${pkg_pkgs[@]}")
             pkgman="pkg install"
+            pm="pkg"
             serviceman="service docker start"
             serviceman2="service docker enable"
             ;;
@@ -308,14 +393,95 @@ install_packages() {
             end=1
             pkgs=("${pkg_add_pkgs[@]}")
             pkgman="pkg_add"
+            pm="pkg_info"
             serviceman="rcctl set docker on"
             serviceman2="rcctl enable docker"
+            ;;
+        "darwin")
+            end=1
+            pkgs=("${brew_pkgs[@]}")
+            pkgman="brew install"
+            pm="homebrew"
+            serviceman="TODO" # TODO
+            serviceman2="TODO" # TODO
             ;;
          *)
             end=0
             pkgs=("${sip_pkgs[@]}")
             pkgman="sip add"
+            pm="sip"
     esac
+
+    if [[ -n $pkgmnr ]]; then
+        pm=$pkgmnr
+        case $pm in
+            "apk")
+                end=1
+                pkgs=("${apk_pkgs[@]}")
+                pkgman="apk add"
+                ;;
+            "pacman")
+                end=1
+                pkgs=("${pacman_pkgs[@]}")
+                pkgman="pacman -Sy --noconfirm"
+                ;;
+            "xbps")
+                end=1
+                pkgs=("${xbps_pkgs[@]}")
+                pkgman="xbps-install -Sy"
+                ;;
+            "apt-get")
+                end=1
+                pkgs=("${apt_pkgs[@]}")
+                pkgman="apt-get install -y"
+                ;;
+            "dnf")
+                end=1
+                pkgs=("${dnf_pkgs[@]}")
+                pkgman="dnf install"
+                ;;
+            "zypper")
+                end=1
+                pkgs=($"${zypper_pkgs[@]}")
+                pkgman="zypper -n install"
+                ;;
+            "pkg")
+                end=1
+                pkgs=("${pkg_pkgs[@]}")
+                pkgman="pkg install"
+                ;;
+            "pkg_info")
+                end=1
+                pkgs=("${pkg_add_pkgs[@]}")
+                pkgman="pkg_info"
+                ;;
+            "homebrew"|"brew")
+                end=1
+                pkgs=("${brew_pkgs[@]}")
+                pkgman="brew install"
+                ;;
+        esac
+    fi
+
+    if [[ -n $initsystem ]]; then
+        case $initsystem in
+            "openrc")
+                serviceman="rc-update add docker default"
+                start="rc-service docker start"
+                ;;
+            "runit")
+                serviceman="rc-update add docker default"
+                start="rc-service docker start"
+                ;;
+            "s6")
+                serviceman="ln -s /etc/s6/docker /service/docker"
+                ;;
+            "systemd")
+                serviceman="service enable docker"
+                start="service start docker"
+                ;;
+        esac
+    fi
     local middle
     local last
     local uv
@@ -334,13 +500,14 @@ install_packages() {
         echo "Installing ${pkgs[$last]}..."
         $pkgman "${pkgs[$last]}"
     elif [[ $1 == 3 ]]; then
-        case $os in
-            "debian"|"ubuntu"|"linuxmint"|"zorin"|"freebsd"|"openbsd"|"other")
-                install_uv_via_script $2
-                ;;
-            *)
+        case $pm in
+            "apk"|"pacman"|"xbps"|"apt-get"|"dnf"|"homebrew")
                 echo "Installing ${pkgs[$uv]}..."
                 $pkgman "${pkgs[$uv]}"
+                ;;
+            *)
+                # These are package managers without the uv package.
+                install_uv_via_script $2
                 ;;
         esac
     else
@@ -365,6 +532,7 @@ install_uv_via_script() {
         curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
     fi
     sleep 3
+    ln -sf /home/$1/.local/bin/uv /usr/local/bin/uv
     uv --version # Check installed version after install.
     clear
 }
@@ -376,7 +544,7 @@ install_uredis_system() {
     cd $install_dir
     unzip -qq -o $install_dir/$(basename $latest_release)
     rm -f $install_dir/$(basename $latest_release)
-    chown -R $1:$1 $install_dir
+    chown -R $1:$2 $install_dir
 }
 
 install_uredis_service() {
@@ -388,6 +556,21 @@ install_uredis_service() {
     unzip -qq -o $install_dir/$(basename $latest_release)
     rm -f $install_dir/$(basename $latest_release)
     cd ..
+    local _os
+    _os=$os # Backup detected/set os.
+    if [[ -n $initsystem ]]; then
+        case $initsystem in
+            "runit")
+                os="void"
+                ;;
+            "s6")
+                os="artix-s6"
+                ;;
+            "systemd")
+                os="systemd"
+                ;;
+        esac
+    fi
     case $os in
         "freebsd")
             pw useradd uredis -d /nonexistent
@@ -438,7 +621,7 @@ install_uredis_service() {
             ln -s /etc/s6/uredis /service/uredis
             ;;
         *) # Any Linux distro using SystemD
-            echo "Installing for systemd..." # !!!
+            echo "Installing for SystemD..."
             useradd -M uredis
             curl -sSf $services/uredis_systemd.sh > /etc/systemd/uredis.service
             chown -R uredis:uredis $install_dir
@@ -447,6 +630,7 @@ install_uredis_service() {
             systemctl daemon-reload
             ;;
     esac
+    os=$_os # Reset OS value.
     rm -rf /home/$1/uredis
 }
 
@@ -507,51 +691,70 @@ main() {
     detect_os
     update_packages 0
     install_packages 0
-    initial
+    setup_stage
 }
 
 # !TODO This will be activated with --os <os> switch.
-# e.g. uredis-setup.sh --os ubuntu
-main_set_os() {
-    os=$1
-    os_name=${os^}
-    echo "Operating system is set as $os_name."
-    sleep 2
+# !TODO This will be activated with --pkgmnr <pkgmnr> switch.
+# !TODO This will be activated with --initsystem <initsystem> switch.
+main_set_os_pkgmnr_and_initsystem() {
+    if [[ -n $1 ]]; then
+        os=$1
+        os_name=${os^}
+        echo "Operating system is set as $os_name."
+    fi
+    if [[ -n $2 ]]; then
+        pkgmr=$2
+        echo "Package manager is set as $pkgmnr."
+    fi
+    if [[ -n $3 ]]; then
+        initsystem=$3
+        echo "Init system is set as $initsystem."
+    fi
+    sleep 5
     clear
     start_prompt
     update_packages 0
     install_packages 0
-    initial
+    setup_stage
 }
 
 install_opt_dependencies_prompt() {
+    local uv
     local optdeps
+    uv="/home/$1/.local/bin/uv"
     read -p "Install optional dependencies to support INFO command (N/y): " optdeps < /dev/tty
     if [[ -z $optdeps ]] || [[ ${optdeps,,} == "n" ]]; then
-        if [[ $2 == "docker" ]]; then
+        if [[ $3 == "docker" ]]; then
             unzip -qq -o $(basename $latest_release) # Extract zip.
         fi
         return # Do not install optional dependencies.
     fi
-    if [[ $2 == "docker" ]]; then
+    if [[ $3 == "docker" ]]; then
         # Extract zip.
         unzip -qq -o $(basename $latest_release)
     fi
-    # Install uv.
-    install_packages 3 $1
+    # Install uv (if necessary).
+    if [[ $os != "sles" ]] && [[ $os != "opensuse-tumbleweed" ]] && [[ $os != "opensuse-leap" ]]; then
+        install_packages 3 $1
+        $uv python install
+    fi
     # Extract server application pyz.
-    unzip -qq uredis-server.pyz -d server_app
+    unzip -qq -o uredis-server.pyz -d server_app
     rm -f uredis-server.pyz
     # Install optional dependencies with uv.
     curl -sSf $requirements_txt > $(basename $requirements_txt)
     mkdir -p server_app/dependencies
-    uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
+    $uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
+    exit 1 # !!!
     # Repackage with included dependencies.
     curl -sSf $server_main_opt_deps > server_app/__main__.py
-    uv run python -m zipapp server_app --output uredis-server.pyz --main __main__:main
+    chown -R $1:$2 server_app
+    $uv run python -m zipapp server_app --output uredis-server.pyz --main __main__:main
+    chown $1:$2 uredis-server.pyz
 }
 
-initial() {
+setup_stage() {
     clear
     print_uredis_logo
     mkdir -p uredis
@@ -559,6 +762,8 @@ initial() {
     download_uredis_latest
     local install
     local user
+    local group
+    local uv
     read -p "Install uRedis on system or on Docker [SYSTEM/docker/service]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
         read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
@@ -571,9 +776,21 @@ initial() {
         while [[ -z $user ]]; do
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
+        case $os in
+            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+                group="users"
+                install_packages 3 $user
+                uv="/home/$user/.local/uv"
+                $uv python install
+                python="uv run python"
+                ;;
+            *)
+                group=$user
+                ;;
+        esac
         install_packages 1
-        install_uredis_system $user
-        install_opt_dependencies_prompt $user "system"
+        install_uredis_system $user $group
+        install_opt_dependencies_prompt $user $group "system"
         create_server_wrapper
         create_client_wrapper
         rm -rf /home/$user/uredis
@@ -587,6 +804,14 @@ initial() {
         while [[ -z $user ]]; do
             read -p "Enter user who should run the Docker service: " user < /dev/tty
         done
+        case $os in
+            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+                group="users"
+                ;;
+            *)
+                group=$user
+                ;;
+        esac
         chown -R $user:$user $(pwd)
         local appname="default"
         read -p "Enter name for app which will use this instance? [$appname]: " appname < /dev/tty
@@ -594,7 +819,7 @@ initial() {
             appname="default"
         fi
         install_packages 2
-        install_opt_dependencies_prompt $user "docker"
+        install_opt_dependencies_prompt $user $group "docker"
         setup_docker $user
         build_uredis_image_docker $user
         generate_run_docker_shellscript $appname $user
@@ -618,9 +843,18 @@ initial() {
         while [[ -z $user ]]; do
             read -p "Enter user for temp directory: " user < /dev/tty
         done
+        case $os in
+            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+                group="users"
+                install_packages 3 $user
+                ;;
+            *)
+                group=$user
+                ;;
+        esac
         install_packages 1
-        install_uredis_service $user
-        install_opt_dependencies_prompt $user "service"
+        install_uredis_service $user $group
+        install_opt_dependencies_prompt $user $group "service"
         create_server_wrapper
         create_client_wrapper
         print_uredis_logo
@@ -629,7 +863,7 @@ initial() {
         echo "uRedis has been installed as a service on $os_name."
         echo "It has been configured to run now and on system startup."
     else
-        initial
+        setup_stage
     fi
     echo
     echo

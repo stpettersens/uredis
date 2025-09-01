@@ -19,6 +19,7 @@ if __name__ == "__main__":
     shutil.copy('logo.txt', _dir)
     shutil.copy('requirements.txt', _dir)
     shutil.copy('Dockerfile', _dir)
+    shutil.copy('server__main__opt_deps.py', _dir)
 
     shutil.copy(os.path.join('services', 'freebsd', 'uredis_freebsd.sh'), os.path.join(_dir, 'services'))
     shutil.copy(os.path.join('services', 'openbsd', 'uredis_openbsd.sh'), os.path.join(_dir, 'services'))
