@@ -157,9 +157,7 @@ brew_pkgs=(
 print_uredis_logo() {
     clear
     echo
-    curl -sSf $logo > $(basename $logo)
     cat $(basename $logo)
-    rm -f $(basename $logo)
     echo
     echo "Redis compatible server and client in Python."
     echo "Written by Sam Saint-Pettersen <s dot stpettersen at pm dot me>"
@@ -510,11 +508,15 @@ install_packages() {
                 install_uv_via_script $2
                 ;;
         esac
+        clear
+        uv --version # Check installed version after install.
+        sleep 3
     else
         # We should never get here!
         echo "Invalid package section."
         exit 1
     fi
+    clear
 }
 
 download_uredis_latest() {
@@ -526,15 +528,16 @@ install_uv_via_script() {
     # This is a fallback, generally prefer to install uv
     # with the system's package manager.
     echo "Installing uv via script..."
-    if [[ $os == "alpine" ]] || [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
+    local uv
+    if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
         curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
     else
         curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
     fi
-    sleep 3
-    ln -sf /home/$1/.local/bin/uv /usr/local/bin/uv
-    uv --version # Check installed version after install.
-    clear
+    export PATH=$PATH:/home/$1/.local/bin
+    uv="export PATH=$PATH:/home/$1/.local/bin"
+    # Append UV to path in .bashrc as necessary.
+    grep -qxF $uv /home/$1/.bashrc || echo $uv >> /home/$1/.bashrc
 }
 
 install_uredis_system() {
@@ -691,6 +694,7 @@ main() {
     detect_os
     update_packages 0
     install_packages 0
+    curl -sSf $logo > $(basename $logo)
     setup_stage
 }
 
@@ -720,9 +724,7 @@ main_set_os_pkgmnr_and_initsystem() {
 }
 
 install_opt_dependencies_prompt() {
-    local uv
     local optdeps
-    uv="/home/$1/.local/bin/uv"
     read -p "Install optional dependencies to support INFO command (N/y): " optdeps < /dev/tty
     if [[ -z $optdeps ]] || [[ ${optdeps,,} == "n" ]]; then
         if [[ $3 == "docker" ]]; then
@@ -736,8 +738,8 @@ install_opt_dependencies_prompt() {
     fi
     # Install uv (if necessary).
     if [[ $os != "sles" ]] && [[ $os != "opensuse-tumbleweed" ]] && [[ $os != "opensuse-leap" ]]; then
-        install_packages 3 $1
-        $uv python install
+        install_packages 3 $user
+        uv python install
     fi
     # Extract server application pyz.
     unzip -qq -o uredis-server.pyz -d server_app
@@ -745,13 +747,14 @@ install_opt_dependencies_prompt() {
     # Install optional dependencies with uv.
     curl -sSf $requirements_txt > $(basename $requirements_txt)
     mkdir -p server_app/dependencies
-    $uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
-    exit 1 # !!!
+    uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
     # Repackage with included dependencies.
     curl -sSf $server_main_opt_deps > server_app/__main__.py
     chown -R $1:$2 server_app
-    $uv run python -m zipapp server_app --output uredis-server.pyz --main __main__:main
+    uv run python -m zipapp server_app --output uredis-server.pyz
+    exit 1 # !!!
     chown $1:$2 uredis-server.pyz
+    rm -f requirements.txt
 }
 
 setup_stage() {
@@ -763,7 +766,6 @@ setup_stage() {
     local install
     local user
     local group
-    local uv
     read -p "Install uRedis on system or on Docker [SYSTEM/docker/service]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
         read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
@@ -780,8 +782,7 @@ setup_stage() {
             "sles"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
                 install_packages 3 $user
-                uv="/home/$user/.local/uv"
-                $uv python install
+                uv python install
                 python="uv run python"
                 ;;
             *)
@@ -793,13 +794,16 @@ setup_stage() {
         install_opt_dependencies_prompt $user $group "system"
         create_server_wrapper
         create_client_wrapper
-        rm -rf /home/$user/uredis
         print_uredis_logo
         echo "Done."
         echo
+        echo "ATTENTION:"
+        echo "If uv is being used to run the applications,"
+        echo "You may need to refresh the shell first."
+        echo
         echo "Run uRedis server with: \"uredis-server\""
         echo "Run uRedis client with: \"uredis-client\""
-
+        rm -rf /home/$user/uredis
     elif [[ ${install,,} == 'docker' ]]; then
         while [[ -z $user ]]; do
             read -p "Enter user who should run the Docker service: " user < /dev/tty
@@ -847,6 +851,8 @@ setup_stage() {
             "sles"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
                 install_packages 3 $user
+                uv python install
+                python="uv run python"
                 ;;
             *)
                 group=$user
@@ -867,6 +873,7 @@ setup_stage() {
     fi
     echo
     echo
+    #rm -f $(basename $logo)
     exit 0
 }
 
