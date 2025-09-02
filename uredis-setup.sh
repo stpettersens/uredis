@@ -74,8 +74,8 @@ initsystem=""
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
     "linux-headers"
-    "gcc",
-    "musl-dev",
+    "gcc"
+    "musl-dev"
     "python3-dev"
     "curl"
     "unzip"
