@@ -73,6 +73,7 @@ initsystem=""
 
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
+    "linux-headers"
     "curl"
     "unzip"
     "python3"
@@ -224,10 +225,6 @@ detect_os() {
             done
             sleep 1
             ;;
-        *)
-            os="other"
-            os_name="Other OS"
-            ;;
     esac
     if [[ $os_name != "Artix" ]]; then
         echo "Detected $os_name as operating system."
@@ -318,7 +315,7 @@ install_packages() {
     local pm
     case $os in
         "alpine")
-            end=1 # was 2, TODO remove comment.
+            end=2
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             pm="apk"
@@ -513,10 +510,6 @@ install_packages() {
         esac
         uv --version # Check installed version after install.
         sleep 3
-    else
-        # We should never get here!
-        echo "Invalid package section."
-        exit 1
     fi
     clear
 }
@@ -530,11 +523,14 @@ install_uv_via_script() {
     # This is a fallback, generally prefer to install uv
     # with the system's package manager.
     echo "Installing uv via script..."
-    if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
-        curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
-    else
-        curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
-    fi
+    case $os in
+        "freebsd"|"openbsd")
+            curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
+            ;;
+        *)
+            curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
+            ;;
+    esac
     export PATH=$PATH:/home/$1/.local/bin
 }
 
@@ -809,7 +805,7 @@ setup_stage() {
         echo "Done."
         echo
         echo "ATTENTION:"
-        echo "If uv is being used to run the applications,"
+        echo "If uv (installed via script) is being used to run the applications,"
         echo "You may need to refresh the shell first."
         echo
         echo "Run uRedis server with: \"uredis-server\""
