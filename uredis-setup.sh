@@ -59,13 +59,13 @@ dockerfile="$server/Dockerfile"
 # Define the requirements.txt file for optional dependencies.
 requirements_txt="$server/requirements.txt"
 
-# Define the server application main file with opt dependencies.
-server_main_opt_deps="$server/server__main__opt_deps.py"
-
 # Define services manager for starting Docker service.
 start="systemctl start docker"
 serviceman="systemctl enable docker"
 serviceman2="" # set as necessary later.
+
+# Using optional dependencies?
+opt_deps=0
 
 # Global switch overrides.
 pkgmnr=""
@@ -157,6 +157,9 @@ brew_pkgs=(
 print_uredis_logo() {
     clear
     echo
+    if [[ ! -f $(basename $logo) ]]; then
+        curl -sSf $logo > $(basename $logo)
+    fi
     cat $(basename $logo)
     echo
     echo "Redis compatible server and client in Python."
@@ -287,7 +290,7 @@ update_packages() {
         "fedora"|"rhel")
             dnf update
             ;;
-        "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+        "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
             zypper refresh
             ;;
         "freebsd")
@@ -373,7 +376,7 @@ install_packages() {
             pm="dnf"
             pkgman="dnf install"
             ;;
-        "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+        "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
             end=1
             pkgs=($"${zypper_pkgs[@]}")
             pm="zypper"
@@ -508,7 +511,6 @@ install_packages() {
                 install_uv_via_script $2
                 ;;
         esac
-        clear
         uv --version # Check installed version after install.
         sleep 3
     else
@@ -528,16 +530,12 @@ install_uv_via_script() {
     # This is a fallback, generally prefer to install uv
     # with the system's package manager.
     echo "Installing uv via script..."
-    local uv
     if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
         curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
     else
         curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
     fi
     export PATH=$PATH:/home/$1/.local/bin
-    uv="export PATH=$PATH:/home/$1/.local/bin"
-    # Append UV to path in .bashrc as necessary.
-    grep -qxF $uv /home/$1/.bashrc || echo $uv >> /home/$1/.bashrc
 }
 
 install_uredis_system() {
@@ -638,15 +636,32 @@ install_uredis_service() {
 }
 
 create_server_wrapper() {
-    echo "#!/bin/sh" > /usr/local/bin/uredis-server
-    echo "$python ${install_dir}/uredis-server.pyz \$@" >> /usr/local/bin/uredis-server
-    chmod +x /usr/local/bin/uredis-server
+    local exedir
+    exedir="/usr/local/bin"
+    case $os in
+        "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
+            exedir="/usr/bin"
+            ;;
+    esac
+    echo "#!/bin/sh" > $exedir/uredis-server
+    if (( $opt_deps == 1 )); then
+        echo "export PYTHONPATH=${install_dir}/dependencies" >> $exedir/uredis-server
+    fi
+    echo "$python ${install_dir}/uredis-server.pyz \$@" >> $exedir/uredis-server
+    chmod +x $exedir/uredis-server
 }
 
 create_client_wrapper() {
-    echo "#!/bin/sh" > /usr/local/bin/uredis-client
-    echo "$python ${install_dir}/uredis-client.pyz \$@" >> /usr/local/bin/uredis-client
-    chmod +x /usr/local/bin/uredis-client
+    local exedir
+    exedir="/usr/local/bin"
+    case $os in
+        "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
+            exedir="/usr/bin"
+            ;;
+    esac
+    echo "#!/bin/sh" > $exedir/uredis-client
+    echo "$python ${install_dir}/uredis-client.pyz \$@" >> $exedir/uredis-client
+    chmod +x $exedir/uredis-client
 }
 
 setup_docker() {
@@ -694,7 +709,6 @@ main() {
     detect_os
     update_packages 0
     install_packages 0
-    curl -sSf $logo > $(basename $logo)
     setup_stage
 }
 
@@ -732,29 +746,26 @@ install_opt_dependencies_prompt() {
         fi
         return # Do not install optional dependencies.
     fi
+    opt_deps=1
     if [[ $3 == "docker" ]]; then
         # Extract zip.
         unzip -qq -o $(basename $latest_release)
     fi
     # Install uv (if necessary).
-    if [[ $os != "sles" ]] && [[ $os != "opensuse-tumbleweed" ]] && [[ $os != "opensuse-leap" ]]; then
-        install_packages 3 $user
-        uv python install
-    fi
-    # Extract server application pyz.
-    unzip -qq -o uredis-server.pyz -d server_app
-    rm -f uredis-server.pyz
+    case $os in
+        "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
+            # uv is always installed on OpenSUSE regardless of opt dependencies.
+            ;;
+         *)
+            install_packages 3 $1
+            uv python install
+            ;;
+    esac
     # Install optional dependencies with uv.
     curl -sSf $requirements_txt > $(basename $requirements_txt)
-    mkdir -p server_app/dependencies
-    uv pip install -r $(basename $requirements_txt) --target server_app/dependencies
-    # Repackage with included dependencies.
-    curl -sSf $server_main_opt_deps > server_app/__main__.py
-    chown -R $1:$2 server_app
-    uv run python -m zipapp server_app --output uredis-server.pyz
-    exit 1 # !!!
-    chown $1:$2 uredis-server.pyz
-    rm -f requirements.txt
+    chown $1:$2 $(basename $requirements_txt)
+    mkdir -p dependencies
+    uv pip install -r $(basename $requirements_txt) --target dependencies
 }
 
 setup_stage() {
@@ -779,7 +790,7 @@ setup_stage() {
             read -p "Enter user who should own installation dir: " user < /dev/tty
         done
         case $os in
-            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+            "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
                 install_packages 3 $user
                 uv python install
@@ -809,7 +820,7 @@ setup_stage() {
             read -p "Enter user who should run the Docker service: " user < /dev/tty
         done
         case $os in
-            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+            "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
                 ;;
             *)
@@ -848,7 +859,7 @@ setup_stage() {
             read -p "Enter user for temp directory: " user < /dev/tty
         done
         case $os in
-            "sles"|"opensuse-tumbleweed"|"opensuse-leap")
+            "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
                 install_packages 3 $user
                 uv python install
@@ -873,7 +884,8 @@ setup_stage() {
     fi
     echo
     echo
-    #rm -f $(basename $logo)
+    rm -f /home/$user/logo.txt
+    rm -f $install_dir/logo.txt
     exit 0
 }
 
