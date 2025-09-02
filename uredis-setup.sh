@@ -74,6 +74,9 @@ initsystem=""
 # Define Alpine Linux (apk) packages:
 apk_pkgs=(
     "linux-headers"
+    "gcc",
+    "musl-dev",
+    "python3-dev"
     "curl"
     "unzip"
     "python3"
@@ -315,7 +318,7 @@ install_packages() {
     local pm
     case $os in
         "alpine")
-            end=2
+            end=5
             pkgs=("${apk_pkgs[@]}")
             pkgman="apk add"
             pm="apk"
