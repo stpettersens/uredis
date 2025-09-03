@@ -1,3 +1,4 @@
-# These are optional, but recommended dependencies to get memory usage with the INFO command:
+# These are optional, but recommended dependencies to get
+# memory usage with the INFO command:
 psutil
 Pympler

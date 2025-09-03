@@ -6,10 +6,6 @@ deps:
 	uv venv
 	uv pip install -r requirements.txt
 
-test_deps:
-	uv venv
-	uv pip install -r requirements.testing.txt
-
 check_client:
 	uvx mypy client__main__.py
 
@@ -51,7 +47,8 @@ build_docker:
 run_docker:
 	uv run python scripts/run_docker_container.py
 
-update:
+update: package
+	@echo
 	@copyparty_sync
 
 webserver:

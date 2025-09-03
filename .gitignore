@@ -10,6 +10,7 @@ version.txt
 *.log
 *.pid
 *.secret_key
+*sha256*
 copyparty*
 localhost
 stpettersen_xyz

@@ -31,7 +31,6 @@ if __name__ == "__main__":
     shutil.copy('logo.txt', _dir)
     shutil.copy('requirements.txt', _dir)
     shutil.copy('Dockerfile', _dir)
-    shutil.copy('server__main__opt_deps.py', _dir)
 
     shutil.copy(os.path.join('services', 'freebsd', 'uredis_freebsd.sh'), os.path.join(_dir, 'services'))
     shutil.copy(os.path.join('services', 'openbsd', 'uredis_openbsd.sh'), os.path.join(_dir, 'services'))
@@ -42,6 +41,12 @@ if __name__ == "__main__":
 
     for f in glob.glob("*.zip"):
         shutil.copy(f, os.path.join(_dir, 'releases', 'uredis_latest.zip'))
+
+    for f in glob.glob("*_sha256.txt"):
+        if f != "uredis-setup_sha256.txt":
+            shutil.copy(f, os.path.join(_dir, 'releases'))
+
+    shutil.copy("uredis-setup_sha256.txt", _dir)
 
     out: list[str] = []
     with open(script) as f:

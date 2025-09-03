@@ -45,19 +45,19 @@ install_dir="/opt/uredis"
 server="https://uredis.homelab.stpettersen.xyz"
 
 # Define the logo.
-logo="$server/logo.txt"
+logo="${server}/logo.txt"
 
-# Define the latest release (a symbolic link to the latest file).
-latest_release="$server/releases/uredis_latest.zip"
+# Define the latest release.
+latest_release="${server}/releases/uredis_latest.zip"
 
 # Define the services directory.
-services="$server/services"
+services="${server}/services"
 
 # Define the Dockerfile.
-dockerfile="$server/Dockerfile"
+dockerfile="${server}/Dockerfile"
 
 # Define the requirements.txt file for optional dependencies.
-requirements_txt="$server/requirements.txt"
+requirements_txt="${server}/requirements.txt"
 
 # Define services manager for starting Docker service.
 start="systemctl start docker"
@@ -157,6 +157,42 @@ brew_pkgs=(
     "docker"
     "uv"
 )
+
+sha256cksm() {
+    local status
+    local cksum_file
+    local cksum_path
+    cksum_file=$1
+    cksum_file="${cksum_file%.*}_sha256.txt"
+    cksum_path="${server}/${cksum_file}"
+    if [[ $2 == 1 ]]; then
+        chksum_path="${server}/releases/${cksum_file}"
+    fi
+    curl -sSf $cksum_path > $cksum_file
+    sha256sum --check "${cksum_file}" > /dev/null 2>&1
+    status=$?
+    if [[ $status == 1 ]]; then
+        echo "SHA256 checksum failed for ${1}."
+        echo "Aborting..."
+        rm -f $cksum_file
+        exit 1
+    else
+        echo "SHA256 checksum OK for ${1}."
+        sleep 3
+    fi
+    rm -f $cksum_file
+}
+
+script_cksm() {
+    if [[ ! -f "uredis-setup.sh" ]]; then
+        curl -sSf "${server}/setup" > uredis-setup.sh
+    fi
+    sha256cksm "uredis-setup.sh" 0
+    if [[ $(basename "$0") != "uredis-setup.sh" ]]; then
+        rm -f uredis-setup.sh
+    fi
+    clear
+}
 
 print_uredis_logo() {
     clear
@@ -520,6 +556,7 @@ install_packages() {
 download_uredis_latest() {
     echo "Downloading latest uRedis release..."
     curl -sSf $latest_release > $(basename $latest_release)
+    sha256cksm $(basename $latest_release) 1
 }
 
 install_uv_via_script() {
@@ -704,6 +741,8 @@ build_uredis_image_docker() {
 }
 
 main() {
+    # Check the SHA256 checksum for this script itself.
+    script_cksm
     start_prompt
     detect_os
     update_packages 0
@@ -715,6 +754,7 @@ main() {
 # !TODO This will be activated with --pkgmnr <pkgmnr> switch.
 # !TODO This will be activated with --initsystem <initsystem> switch.
 main_set_os_pkgmnr_and_initsystem() {
+    script_cksm
     if [[ -n $1 ]]; then
         os=$1
         os_name=${os^}
