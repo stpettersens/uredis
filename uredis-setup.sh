@@ -169,7 +169,7 @@ sha256cksm() {
         chksum_path="${server}/releases/${cksum_file}"
     fi
     curl -sSf $cksum_path > $cksum_file
-    sha256sum --check "${cksum_file}" > /dev/null 2>&1
+    sha256sum -c "${cksum_file}" > /dev/null 2>&1
     status=$?
     if [[ $status == 1 ]]; then
         echo "SHA256 checksum failed for ${1}."
