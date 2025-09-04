@@ -623,6 +623,9 @@ install_uv_via_script() {
     # with the system's package manager.
     echo "Installing uv via script..."
     case $os in
+        "slax")
+            curl -LsSf https://astral.sh/uv/install.sh | bash
+            ;;
         "freebsd"|"openbsd")
             curl -LsSf https://astral.sh/uv/install.sh | doas -u "${1}" bash
             ;;
