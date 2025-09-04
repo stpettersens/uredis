@@ -51,11 +51,11 @@ update: package
 	@echo
 	@copyparty_sync
 
-webserver:
+webserver: package
 	uv run python create_uredis_install_script_localhost.py
 	cd localhost && uv run python -m http.server
 
-deploy:
+deploy: package
 	uv run python create_uredis_install_script_stpettersen_xyz.py
 
 clean:

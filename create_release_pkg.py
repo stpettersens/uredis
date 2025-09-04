@@ -1,7 +1,10 @@
 import os
 import sys
+import shutil
 import zipfile
 import hashlib
+import platform
+import subprocess
 
 def sha256sum(filename: str) -> str:
     with open(filename, 'rb', buffering=0) as f:
@@ -40,5 +43,12 @@ if __name__ == "__main__":
 
     with open(checksum_script, 'w') as schksum:
         schksum.write(f"{sha256sum("uredis-setup.sh")} uredis-setup.sh")
+
+    # Check PowerShell and Bash install script is valid.
+    bash = subprocess.run("bash -n uredis-setup.sh")
+    if bash.returncode != 0:
+        sys.exit(1)
+
+    shutil.copy("uredis-setup.sh", "setup")
 
     sys.exit(0)

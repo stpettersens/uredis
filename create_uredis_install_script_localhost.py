@@ -43,10 +43,7 @@ if __name__ == "__main__":
         shutil.copy(f, os.path.join(_dir, 'releases', 'uredis_latest.zip'))
 
     for f in glob.glob("*_sha256.txt"):
-        if f != "uredis-setup_sha256.txt":
-            shutil.copy(f, os.path.join(_dir, 'releases'))
-
-    shutil.copy("uredis-setup_sha256.txt", _dir)
+        shutil.copy(f, _dir)
 
     out: list[str] = []
     with open(script) as f:

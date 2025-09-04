@@ -7,6 +7,7 @@ if __name__ == "__main__":
     _dir: str = "stpettersen_xyz"
     script: str = "uredis-setup.sh"
     homelab_url: str = "https://uredis.homelab.stpettersen.xyz"
+    sh_hl_url: str = "https://sh.homelab.stpettersen.xyz"
 
     try:
         releases = os.path.join(_dir, 'releases')
@@ -31,10 +32,7 @@ if __name__ == "__main__":
         shutil.copy(f, os.path.join(_dir, 'releases', 'uredis_latest.zip'))
 
     for f in glob.glob("*_sha256.txt"):
-        if f != "uredis-setup_sha256.txt":
-            shutil.copy(f, os.path.join(_dir, 'releases'))
-
-    shutil.copy("uredis-setup_sha256.txt", _dir)
+        shutil.copy(f, _dir)
 
     out: list[str] = []
     with open(script) as f:
@@ -42,6 +40,8 @@ if __name__ == "__main__":
         for l in lines:
             if l.find(homelab_url) != -1:
                 out.append(l.replace(homelab_url, "https://uredis.stpettersen.xyz"))
+            elif l.find(sh_hl_url) != -1:
+                out.append(l.replace(sh_hl_url, "https://sh.stpettersen.xyz"))
             else:
                 out.append(l)
 

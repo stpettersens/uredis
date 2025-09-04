@@ -10,6 +10,7 @@
 # * Void Linux
 # * Arch Linux and its derivatives (e.g. Artix, Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
+# * Slax Linux (Debian-based version).
 # * Fedora/RHEL Linux and its derivatives (e.g. Nobara).
 # * SUSE/OpenSUSE Linux.
 # * Generic Linux (any other distribution with my package manager SIP).
@@ -20,10 +21,10 @@
 # ------------------------------------------------------------------
 # Please install bash (if necessary) and curl.
 # ------------------------------------------------------------------
-# > curl -sSf https://uredis.stpettersen.xyz/setup | sudo bash
+# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup | sudo bash
 #
 # OR SAFER WAY, INSPECTING THE SCRIPT CONTENTS BEFORE RUNNING:
-# > curl -sSf https://uredis.stpettersen.xyz/setup > uredis-setup.sh
+# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup > uredis-setup.sh
 # > cat uredis-setup.sh
 # > bash uredis-setup.sh
 # ------------------------------------------------------------------
@@ -161,17 +162,13 @@ brew_pkgs=(
 sha256cksm() {
     local status
     local cksum_file
-    local cksum_path
     cksum_file=$1
     cksum_file="${cksum_file%.*}_sha256.txt"
-    cksum_path="${server}/${cksum_file}"
-    if [[ $2 == 1 ]]; then
-        chksum_path="${server}/releases/${cksum_file}"
-    fi
-    curl -sSf $cksum_path > $cksum_file
+    sleep 3
+    curl -sSf "${server}/${cksum_file}" > $cksum_file
     sha256sum -c "${cksum_file}" > /dev/null 2>&1
     status=$?
-    if [[ $status == 1 ]]; then
+    if (( $status == 1 )); then
         echo "SHA256 checksum failed for ${1}."
         echo "Aborting..."
         rm -f $cksum_file
@@ -187,7 +184,7 @@ script_cksm() {
     if [[ ! -f "uredis-setup.sh" ]]; then
         curl -sSf "${server}/setup" > uredis-setup.sh
     fi
-    sha256cksm "uredis-setup.sh" 0
+    sha256cksm "uredis-setup.sh"
     if [[ $(basename "$0") != "uredis-setup.sh" ]]; then
         rm -f uredis-setup.sh
     fi
@@ -265,9 +262,67 @@ detect_os() {
             sleep 1
             ;;
     esac
+    detect_is_slax
     if [[ $os_name != "Artix" ]]; then
         echo "Detected $os_name as operating system."
         sleep 1
+    fi
+}
+
+detect_is_slax() {
+    # Determine is Slax by detecting the `genslaxiso` utility.
+    local status
+    command -v genslaxiso > /dev/null
+    status=$?
+    if (( $status == 0 )); then
+        unset os
+        unset osname
+        os="slax"
+        os_name=${os^}
+    fi
+}
+
+write_slax_iso_or_to_modules() {
+    if [[ $os == "slax" ]]; then
+        local status
+        lsblk | grep sdb > /dev/null
+        status=$?
+        if [[ $status == 0 ]]; then
+            local modchanges
+            read -p "Do you want to write changes including installed uRedis back to Slax modules? (y/N): " modchanges < /dev/tty
+            if [[ -z $modchanges ]] || [[ ${modchanges,,} == "n" ]]; then
+                return
+            elif [[ ${modchanges,,} == "y" ]]; then
+                # Write changes back to drive if running from a flash drive.
+                echo "Please be patient, generating a new Slax module which contains uRedis..."
+                savechanges /root/uredis.sb
+                mv /root/uredis.sb /run/initramfs/memory/data/slax/modules/
+                echo "uRedis has been written to Slax modules folder"
+                echo "and will be available on reboot."
+                echo
+                echo
+            else
+                return
+            fi
+        else
+            local writeiso
+            read -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
+            if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
+                return
+            elif [[ ${writeiso,,} == "y" ]]; then
+                # Write an ISO if system is not running from a flash drive.
+                echo "Please be patient, generating a new Slax ISO which contains uRedis..."
+                savechanges /root/uredis.sb
+                genslaxiso /root/slax_uredis.iso /root/uredis.sb
+                echo "Done."
+                echo "A Slax ISO has been generated:"
+                echo "/root/slax_uredis.iso"
+                echo
+                echo
+            else
+                return
+            fi
+        fi
     fi
 }
 
@@ -320,7 +375,7 @@ update_packages() {
         "arch"|"artix-openrc"|"artix-runit"|"artix-dinit"|"artix-s6"|"garuda"|"cachyos")
             pacman -Sy --noconfirm
             ;;
-        "debian"|"ubuntu"|"linuxmint"|"zorin")
+        "debian"|"ubuntu"|"linuxmint"|"zorin"|"slax")
             apt-get update -y
             ;;
         "fedora"|"rhel")
@@ -400,7 +455,7 @@ install_packages() {
             serviceman="service enable docker"
             start="service start docker"
             ;;
-        "debian"|"ubuntu"|"linuxmint"|"zorin")
+        "debian"|"ubuntu"|"linuxmint"|"zorin"|"slax")
             end=1
             pkgs=("${apt_pkgs[@]}")
             pm="apt-get"
@@ -556,7 +611,7 @@ install_packages() {
 download_uredis_latest() {
     echo "Downloading latest uRedis release..."
     curl -sSf $latest_release > $(basename $latest_release)
-    sha256cksm $(basename $latest_release) 1
+    sha256cksm "$(basename $latest_release)"
 }
 
 install_uv_via_script() {
@@ -771,6 +826,7 @@ main_set_os_pkgmnr_and_initsystem() {
     sleep 5
     clear
     start_prompt
+    detect_is_slax
     update_packages 0
     install_packages 0
     setup_stage
@@ -923,6 +979,7 @@ setup_stage() {
     fi
     echo
     echo
+    write_slax_iso_or_to_modules
     rm -f /home/$user/logo.txt
     rm -f $install_dir/logo.txt
     exit 0
