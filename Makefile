@@ -2,7 +2,7 @@ uname := $(shell uname)
 bash=bash
 
 ifeq ($(uname),Windows)
-	bash=@echo
+	bash=:
 endif
 
 make: server
