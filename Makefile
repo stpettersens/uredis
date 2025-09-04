@@ -1,3 +1,10 @@
+uname := $(shell uname)
+bash=bash
+
+ifeq ($(uname),Windows)
+	bash=@echo
+endif
+
 make: server
 
 all: build_server build_client
@@ -48,6 +55,8 @@ run_docker:
 	uv run python scripts/run_docker_container.py
 
 update: package
+	@echo
+	$(bash) -n uredis-setup.sh
 	@echo
 	@copyparty_sync
 
