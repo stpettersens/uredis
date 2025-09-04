@@ -597,7 +597,7 @@ install_packages() {
         $pkgman "${pkgs[$last]}"
     elif [[ $1 == 3 ]]; then
         case $pm in
-            "apk"|"pacman"|"xbps"|"apt-get"|"dnf"|"homebrew")
+            "apk"|"pacman"|"xbps"|"dnf"|"homebrew")
                 echo "Installing ${pkgs[$uv]}..."
                 $pkgman "${pkgs[$uv]}"
                 ;;
