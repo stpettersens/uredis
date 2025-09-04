@@ -1,8 +1,12 @@
 uname := $(shell uname)
-bash=bash
+shellcheck=shellcheck
+
+ifeq ($(uname),CYGWIN_NT-10.0-19044)
+	shellcheck=bash -n
+endif
 
 ifeq ($(uname),Windows)
-	bash=:
+	shellcheck=:
 endif
 
 make: server
@@ -54,9 +58,10 @@ build_docker:
 run_docker:
 	uv run python scripts/run_docker_container.py
 
-update: package
-	@echo
-	$(bash) -n uredis-setup.sh
+shellcheck:
+	$(shellcheck) uredis-setup.sh
+
+update: shellcheck package
 	@echo
 	@copyparty_sync
 

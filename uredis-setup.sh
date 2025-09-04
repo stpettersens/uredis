@@ -165,19 +165,19 @@ sha256cksm() {
     cksum_file=$1
     cksum_file="${cksum_file%.*}_sha256.txt"
     sleep 3
-    curl -sSf "${server}/${cksum_file}" > $cksum_file
+    curl -sSf "${server}/${cksum_file}" > "${cksum_file}"
     sha256sum -c "${cksum_file}" > /dev/null 2>&1
     status=$?
-    if (( $status == 1 )); then
+    if (( status == 1 )); then
         echo "SHA256 checksum failed for ${1}."
         echo "Aborting..."
-        rm -f $cksum_file
+        rm -f "${cksum_file}"
         exit 1
     else
         echo "SHA256 checksum OK for ${1}."
         sleep 3
     fi
-    rm -f $cksum_file
+    rm -f "${cksum_file}"
 }
 
 script_cksm() {
@@ -194,10 +194,10 @@ script_cksm() {
 print_uredis_logo() {
     clear
     echo
-    if [[ ! -f $(basename $logo) ]]; then
-        curl -sSf $logo > $(basename $logo)
+    if [[ ! -f "$(basename $logo)" ]]; then
+        curl -sSf $logo > "$(basename $logo)"
     fi
-    cat $(basename $logo)
+    cat "$(basename $logo)"
     echo
     echo "Redis compatible server and client in Python."
     echo "Written by Sam Saint-Pettersen <s dot stpettersen at pm dot me>"
@@ -211,7 +211,7 @@ start_prompt() {
     echo "dependencies on your system."
     echo
     local continue
-    read -p "Continue (y/N)? " continue < /dev/tty
+    read -r -p "Continue (y/N)? " continue < /dev/tty
     if [[ -z $continue ]] || [[ ${continue,,} == 'n' ]]; then
         exit 1
     else
@@ -225,7 +225,7 @@ alpine_enable_all_repos() {
 
 detect_os() {
     os=$(grep "^ID=" /etc/os-release | head -n 1 | cut -d '=' -f 2 | tr -d '"')
-    os=$(echo $os | awk '{ print $1 }')
+    os=$(echo "${os}" | awk '{ print $1 }')
     os_name="${os^}"
     case $os in
         "rhel"|"sles")
@@ -247,7 +247,7 @@ detect_os() {
             echo "Detected Artix as operating system."
             local initsys
             while [[ -z $initsys ]]; do
-                read -p "Which init system are you using (openrc/runit/dinit/s6): " initsys < /dev/tty
+                read -r -p "Which init system are you using (openrc/runit/dinit/s6): " initsys < /dev/tty
                 initsys="${initsys,,}"
                 # Check a valid init system was set:
                 case $initsys in
@@ -274,7 +274,7 @@ detect_is_slax() {
     local status
     command -v genslaxiso > /dev/null
     status=$?
-    if (( $status == 0 )); then
+    if (( status == 0 )); then
         unset os
         unset osname
         os="slax"
@@ -284,12 +284,14 @@ detect_is_slax() {
 
 write_slax_iso_or_to_modules() {
     if [[ $os == "slax" ]]; then
+        rm -rf /root/uredis
+        rm -f /root/logo.txt
         local status
         lsblk | grep sdb > /dev/null
         status=$?
         if [[ $status == 0 ]]; then
             local modchanges
-            read -p "Do you want to write changes including installed uRedis back to Slax modules? (y/N): " modchanges < /dev/tty
+            read -r -p "Do you want to write changes including installed uRedis back to Slax modules? (y/N): " modchanges < /dev/tty
             if [[ -z $modchanges ]] || [[ ${modchanges,,} == "n" ]]; then
                 return
             elif [[ ${modchanges,,} == "y" ]]; then
@@ -306,7 +308,7 @@ write_slax_iso_or_to_modules() {
             fi
         else
             local writeiso
-            read -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
+            read -r -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
             if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
                 return
             elif [[ ${writeiso,,} == "y" ]]; then
@@ -314,7 +316,9 @@ write_slax_iso_or_to_modules() {
                 echo "Please be patient, generating a new Slax ISO which contains uRedis..."
                 savechanges /root/uredis.sb
                 genslaxiso /root/slax_uredis.iso /root/uredis.sb
+                rm -f /root/uredis.sb
                 echo "Done."
+                echo
                 echo "A Slax ISO has been generated:"
                 echo "/root/slax_uredis.iso"
                 echo
@@ -329,7 +333,7 @@ write_slax_iso_or_to_modules() {
 update_packages() {
     echo "Updating package index..."
     if [[ -n $pkgmnr ]]; then
-        case $pkgmr in
+        case $pkgmnr in
             "apk")
                 sudo="doas"
                 alpine_enable_all_repos
@@ -599,7 +603,7 @@ install_packages() {
                 ;;
             *)
                 # These are package managers without the uv package.
-                install_uv_via_script $2
+                install_uv_via_script "${2}"
                 ;;
         esac
         uv --version # Check installed version after install.
@@ -610,7 +614,7 @@ install_packages() {
 
 download_uredis_latest() {
     echo "Downloading latest uRedis release..."
-    curl -sSf $latest_release > $(basename $latest_release)
+    curl -sSf $latest_release > "$(basename $latest_release)"
     sha256cksm "$(basename $latest_release)"
 }
 
@@ -620,10 +624,10 @@ install_uv_via_script() {
     echo "Installing uv via script..."
     case $os in
         "freebsd"|"openbsd")
-            curl -LsSf https://astral.sh/uv/install.sh | doas -u $1 bash
+            curl -LsSf https://astral.sh/uv/install.sh | doas -u "${1}" bash
             ;;
         *)
-            curl -LsSf https://astral.sh/uv/install.sh | sudo -u $1 bash
+            curl -LsSf https://astral.sh/uv/install.sh | sudo -u "${1}" bash
             ;;
     esac
     export PATH=$PATH:/home/$1/.local/bin
@@ -631,22 +635,22 @@ install_uv_via_script() {
 
 install_uredis_system() {
     echo "Installing uRedis on system..."
-    mkdir -p $install_dir
-    mv $(basename $latest_release) $install_dir
-    cd $install_dir
-    unzip -qq -o $install_dir/$(basename $latest_release)
-    rm -f $install_dir/$(basename $latest_release)
-    chown -R $1:$2 $install_dir
+    mkdir -p "${install_dir}"
+    mv "$(basename $latest_release)" "${install_dir}"
+    cd "${install_dir}" || exit 1
+    unzip -qq -o "${install_dir}/$(basename $latest_release)"
+    rm -f "${install_dir}/$(basename $latest_release)"
+    chown -R "${1}":"${2}" "${install_dir}"
 }
 
 install_uredis_service() {
     echo "Installing uRedis as service..."
     mkdir -p $install_dir
-    cd uredis
-    mv $(basename $latest_release) $install_dir
-    cd $install_dir
-    unzip -qq -o $install_dir/$(basename $latest_release)
-    rm -f $install_dir/$(basename $latest_release)
+    cd uredis || exit 1
+    mv "$(basename $latest_release)" "${install_dir}"
+    cd "${install_dir}" || exit 1
+    unzip -qq -o "${install_dir}/$(basename $latest_release)"
+    rm -f "${install_dir}/$(basename $latest_release)"
     cd ..
     local _os
     _os=$os # Backup detected/set os.
@@ -723,7 +727,7 @@ install_uredis_service() {
             ;;
     esac
     os=$_os # Reset OS value.
-    rm -rf /home/$1/uredis
+    rm -rf "/home/${1}/uredis"
 }
 
 create_server_wrapper() {
@@ -735,7 +739,7 @@ create_server_wrapper() {
             ;;
     esac
     echo "#!/bin/sh" > $exedir/uredis-server
-    if (( $opt_deps == 1 )); then
+    if (( opt_deps == 1 )); then
         echo "export PYTHONPATH=${install_dir}/dependencies" >> $exedir/uredis-server
     fi
     echo "$python ${install_dir}/uredis-server.pyz \$@" >> $exedir/uredis-server
@@ -757,9 +761,9 @@ create_client_wrapper() {
 
 setup_docker() {
     if [[ $os == "alpine" ]]; then
-        addgroup $1 docker
+        addgroup "${1}" docker
     else
-        usermod -aG docker $1
+        usermod -aG docker "${1}"
     fi
     $serviceman
     $start
@@ -771,22 +775,24 @@ setup_docker() {
 }
 
 generate_run_docker_shellscript() {
-    echo "#!/usr/bin/env bash" > run_uredis_container.sh
-    echo "docker network create ${1}_network" >> run_uredis_container.sh
-    echo "docker run --rm --network ${1}_network --name uredis_${1} -h uredis -v \$(pwd):/opt/uredis -d uredis_img" >> run_uredis_container.sh
-    echo "ipaddress=\$(docker inspect --format \"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}\" uredis_${1})" >> run_uredis_container.sh
-    echo "echo \"APP_NETWORK=${1}_network\" > ../.env" >> run_uredis_container.sh
-    echo "echo \"${1^^}_REDIS_HOST=\$ipaddress\" >> ../.env" >> run_uredis_container.sh
-    echo "echo \"${1^^}_REDIS_PORT=6379\" >> ../.env" >> run_uredis_container.sh
-    chown $2:$2 run_uredis_container.sh
+    {
+    echo "#!/usr/bin/env bash"
+    echo "docker network create ${1}_network"
+    echo "docker run --rm --network ${1}_network --name uredis_${1} -h uredis -v \$(pwd):/opt/uredis -d uredis_img"
+    echo "ipaddress=\$(docker inspect --format \"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}\" uredis_${1})"
+    echo "echo \"APP_NETWORK=${1}_network\" > ../.env"
+    echo "echo \"${1^^}_REDIS_HOST=\$ipaddress\" >> ../.env"
+    echo "echo \"${1^^}_REDIS_PORT=6379\" >> ../.env"
+    } > run_uredis_container.sh
+    chown "${2}:${2}" run_uredis_container.sh
     chmod +x run_uredis_container.sh
 }
 
 build_uredis_image_docker() {
     clear
     echo "Building uRedis image (uredis-img) for Docker..."
-    curl -sSf $dockerfile > $(basename $dockerfile)
-    rm -f $(basename $latest_release)
+    curl -sSf "${dockerfile}" > "$(basename $dockerfile)"
+    rm -f "$(basename $latest_release)"
     if [[ -f "uredis-server.pyz" ]] && [[ -f "uredis-client.pyz" ]]; then
         docker build -t uredis_img .
     else
@@ -808,6 +814,7 @@ main() {
 # !TODO This will be activated with --os <os> switch.
 # !TODO This will be activated with --pkgmnr <pkgmnr> switch.
 # !TODO This will be activated with --initsystem <initsystem> switch.
+: <<'END_COMMENT'
 main_set_os_pkgmnr_and_initsystem() {
     script_cksm
     if [[ -n $1 ]]; then
@@ -831,20 +838,21 @@ main_set_os_pkgmnr_and_initsystem() {
     install_packages 0
     setup_stage
 }
+END_COMMENT
 
 install_opt_dependencies_prompt() {
     local optdeps
-    read -p "Install optional dependencies to support INFO command (N/y): " optdeps < /dev/tty
+    read -r -p "Install optional dependencies to support INFO command (N/y): " optdeps < /dev/tty
     if [[ -z $optdeps ]] || [[ ${optdeps,,} == "n" ]]; then
         if [[ $3 == "docker" ]]; then
-            unzip -qq -o $(basename $latest_release) # Extract zip.
+            unzip -qq -o "$(basename $latest_release)" # Extract zip.
         fi
         return # Do not install optional dependencies.
     fi
     opt_deps=1
     if [[ $3 == "docker" ]]; then
         # Extract zip.
-        unzip -qq -o $(basename $latest_release)
+        unzip -qq -o "$(basename $latest_release)"
     fi
     # Install uv (if necessary).
     case $os in
@@ -852,29 +860,29 @@ install_opt_dependencies_prompt() {
             # uv is always installed on OpenSUSE regardless of opt dependencies.
             ;;
          *)
-            install_packages 3 $1
+            install_packages 3 "${1}"
             uv python install
             ;;
     esac
     # Install optional dependencies with uv.
-    curl -sSf $requirements_txt > $(basename $requirements_txt)
-    chown $1:$2 $(basename $requirements_txt)
+    curl -sSf "${requirements_txt}" > "$(basename $requirements_txt)"
+    chown "${1}":"${2}" "$(basename $requirements_txt)"
     mkdir -p dependencies
-    uv pip install -r $(basename $requirements_txt) --target dependencies
+    uv pip install -r "$(basename $requirements_txt)" --target dependencies
 }
 
 setup_stage() {
     clear
     print_uredis_logo
     mkdir -p uredis
-    cd uredis
+    cd uredis || exit 1
     download_uredis_latest
     local install
     local user
     local group
-    read -p "Install uRedis on system or on Docker [SYSTEM/docker/service]? " install < /dev/tty
+    read -r -p "Install uRedis on system or on Docker [SYSTEM/docker/service]? " install < /dev/tty
     if [[ -z $install ]] || [[ ${install,,} == 'system' ]]; then
-        read -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
+        read -r -p "Enter installation dir [$install_dir]: " install_dir < /dev/tty
         if [[ -z $install_dir ]]; then
             install_dir="/opt/uredis"
             if [[ $os == "freebsd" ]] || [[ $os == "openbsd" ]]; then
@@ -882,12 +890,12 @@ setup_stage() {
             fi
         fi
         while [[ -z $user ]]; do
-            read -p "Enter user who should own installation dir: " user < /dev/tty
+            read -r -p "Enter user who should own installation dir: " user < /dev/tty
         done
         case $os in
             "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
-                install_packages 3 $user
+                install_packages 3 "${user}"
                 uv python install
                 python="uv run python"
                 ;;
@@ -896,8 +904,8 @@ setup_stage() {
                 ;;
         esac
         install_packages 1
-        install_uredis_system $user $group
-        install_opt_dependencies_prompt $user $group "system"
+        install_uredis_system "${user}" "${group}"
+        install_opt_dependencies_prompt "${user}" "${group}" "system"
         create_server_wrapper
         create_client_wrapper
         print_uredis_logo
@@ -909,10 +917,10 @@ setup_stage() {
         echo
         echo "Run uRedis server with: \"uredis-server\""
         echo "Run uRedis client with: \"uredis-client\""
-        rm -rf /home/$user/uredis
+        rm -rf "/home/${user}/uredis"
     elif [[ ${install,,} == 'docker' ]]; then
         while [[ -z $user ]]; do
-            read -p "Enter user who should run the Docker service: " user < /dev/tty
+            read -r -p "Enter user who should run the Docker service: " user < /dev/tty
         done
         case $os in
             "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
@@ -922,17 +930,17 @@ setup_stage() {
                 group=$user
                 ;;
         esac
-        chown -R $user:$user $(pwd)
+        chown -R "${user}:${user}" "$(pwd)"
         local appname="default"
-        read -p "Enter name for app which will use this instance? [$appname]: " appname < /dev/tty
+        read -r -p "Enter name for app which will use this instance? [$appname]: " appname < /dev/tty
         if [[ -z $appname ]]; then
             appname="default"
         fi
         install_packages 2
-        install_opt_dependencies_prompt $user $group "docker"
-        setup_docker $user
-        build_uredis_image_docker $user
-        generate_run_docker_shellscript $appname $user
+        install_opt_dependencies_prompt "${user}" "${group}" "docker"
+        setup_docker "${user}"
+        build_uredis_image_docker "${user}"
+        generate_run_docker_shellscript "${appname}" "${user}"
         print_uredis_logo
         echo "Done."
         echo
@@ -951,12 +959,12 @@ setup_stage() {
             install_dir="/usr/local/opt/uredis"
         fi
         while [[ -z $user ]]; do
-            read -p "Enter user for temp directory: " user < /dev/tty
+            read -r -p "Enter user for temp directory: " user < /dev/tty
         done
         case $os in
             "sles"|"sled"|"opensuse-tumbleweed"|"opensuse-leap")
                 group="users"
-                install_packages 3 $user
+                install_packages 3 "${user}"
                 uv python install
                 python="uv run python"
                 ;;
@@ -965,8 +973,8 @@ setup_stage() {
                 ;;
         esac
         install_packages 1
-        install_uredis_service $user $group
-        install_opt_dependencies_prompt $user $group "service"
+        install_uredis_service "${user}" "${group}"
+        install_opt_dependencies_prompt "${user}" "${group}" "service"
         create_server_wrapper
         create_client_wrapper
         print_uredis_logo
@@ -980,8 +988,8 @@ setup_stage() {
     echo
     echo
     write_slax_iso_or_to_modules
-    rm -f /home/$user/logo.txt
-    rm -f $install_dir/logo.txt
+    rm -f "/home/${user}/logo.txt"
+    rm -f "${install_dir}/logo.txt"
     exit 0
 }
 
