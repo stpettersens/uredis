@@ -6,11 +6,11 @@
 # To install uRedis in a similar way on Windows systems, please use uredis-setup.ps1
 # This script works (where Bash exists) with:
 #
-# * Alpine Linux (run curl -sSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash)
-# * Void Linux
+# * Alpine Linux (run curl -sSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash).
+# * Void Linux.
 # * Arch Linux and its derivatives (e.g. Artix, Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
-# * Slax Linux (Debian-based version).
+# * Slax Linux (Debian based version is recommended).
 # * Fedora/RHEL Linux and its derivatives (e.g. Nobara).
 # * SUSE/OpenSUSE Linux.
 # * Generic Linux (any other distribution with my package manager SIP).
@@ -109,6 +109,20 @@ apt_pkgs=(
     "unzip"
     "python3"
     "docker.io"
+)
+
+# Define Slax (Debian) packages:
+slax_pkgs=(
+    "curl"
+    "python3"
+    "docker.io"
+)
+
+# Slax (Slackware) packages.
+slaxpkg_pkgs=(
+    "curl"
+    "python3"
+    "docker"
 )
 
 # Define Fedora/RHEL (dnf) packages:
@@ -271,61 +285,40 @@ detect_os() {
 
 detect_is_slax() {
     # Determine is Slax by detecting the `genslaxiso` utility.
-    local status
+    local statusa
+    local statusb
     command -v genslaxiso > /dev/null
-    status=$?
-    if (( status == 0 )); then
-        unset os
-        unset osname
+    statusa=$?
+    if (( statusa == 0 )); then
         os="slax"
         os_name=${os^}
     fi
+    # Determine if Slax is Slackware based release.
+    # by detecting `slackpkg` utility.
+    # Use os is "slacks" for that.
+    command -v slackpkg > /dev/null
+    statusb=$?
+    if (( statusb == 0 )); then
+        os="slacks"
+        # Install package manager wrapper for Slackware Slax.
+        wget --no-check-certificate https://sh.homelab.stpettersen.xyz/slax/slaxpkg.sh
+        sha256cksm slaxpkg.sh
+        mv slaxpkg.sh /usr/local/bin/slaxpkg
+        chmod +x /usr/local/bin/slaxpkg
+    fi
 }
 
-write_slax_iso_or_to_modules() {
-    if [[ $os == "slax" ]]; then
+write_slax_iso() {
+    if [[ $os == "slax" ]] || [[ $os == "slacks" ]]; then
         rm -rf /root/uredis
         rm -f /root/logo.txt
-        local status
-        lsblk | grep sdb > /dev/null
-        status=$?
-        if [[ $status == 0 ]]; then
-            local modchanges
-            read -r -p "Do you want to write changes including installed uRedis back to Slax modules? (y/N): " modchanges < /dev/tty
-            if [[ -z $modchanges ]] || [[ ${modchanges,,} == "n" ]]; then
-                return
-            elif [[ ${modchanges,,} == "y" ]]; then
-                # Write changes back to drive if running from a flash drive.
-                echo "Please be patient, generating a new Slax module which contains uRedis..."
-                savechanges /root/uredis.sb
-                mv /root/uredis.sb /run/initramfs/memory/data/slax/modules/
-                echo "uRedis has been written to Slax modules folder"
-                echo "and will be available on reboot."
-                echo
-                echo
-            else
-                return
-            fi
-        else
-            local writeiso
-            read -r -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
-            if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
-                return
-            elif [[ ${writeiso,,} == "y" ]]; then
-                # Write an ISO if system is not running from a flash drive.
-                echo "Please be patient, generating a new Slax ISO which contains uRedis..."
-                savechanges /root/uredis.sb
-                genslaxiso /root/slax_uredis.iso /root/uredis.sb
-                rm -f /root/uredis.sb
-                echo "Done."
-                echo
-                echo "A Slax ISO has been generated:"
-                echo "/root/slax_uredis.iso"
-                echo
-                echo
-            else
-                return
-            fi
+        local writeiso
+        read -r -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
+        if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
+            return
+        elif [[ ${writeiso,,} == "y" ]]; then
+            # Write an ISO if system is not running from a flash drive.
+            slaxpkg generateiso slax_uredis.iso
         fi
     fi
 }
@@ -359,6 +352,9 @@ update_packages() {
                 ;;
              "pkg_info")
                 pkg_info update
+                ;;
+             "slaxpkg")
+                slaxpkg update
                 ;;
              "homebrew"|"brew")
                 brew update
@@ -395,6 +391,9 @@ update_packages() {
         "openbsd")
             sudo="doas"
             pkg_info update
+            ;;
+        "slacks")
+            slaxpkg update
             ;;
         "darwin")
             brew update
@@ -493,6 +492,12 @@ install_packages() {
             serviceman="rcctl set docker on"
             serviceman2="rcctl enable docker"
             ;;
+        "slacks")
+            end=1
+            pkgs=("${slaxpkg_pkgs[@]}")
+            pkgman="slaxpkg"
+            pm="slaxpkg"
+            ;;
         "darwin")
             end=1
             pkgs=("${brew_pkgs[@]}")
@@ -550,6 +555,11 @@ install_packages() {
                 end=1
                 pkgs=("${pkg_add_pkgs[@]}")
                 pkgman="pkg_info"
+                ;;
+            "slaxpkg")
+                end=1
+                pkgs=("${slaxpkg_pkgs[@]}")
+                pkgman="slaxpkg"
                 ;;
             "homebrew"|"brew")
                 end=1
@@ -623,7 +633,7 @@ install_uv_via_script() {
     # with the system's package manager.
     echo "Installing uv via script..."
     case $os in
-        "slax")
+        "slax"|"slacks")
             curl -LsSf https://astral.sh/uv/install.sh | bash
             ;;
         "freebsd"|"openbsd")
@@ -990,7 +1000,7 @@ setup_stage() {
     fi
     echo
     echo
-    write_slax_iso_or_to_modules
+    write_slax_iso
     rm -f "/home/${user}/logo.txt"
     rm -f "${install_dir}/logo.txt"
     exit 0
