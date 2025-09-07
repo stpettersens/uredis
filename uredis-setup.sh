@@ -119,7 +119,7 @@ slax_pkgs=(
 )
 
 # Slax (Slackware) packages.
-slaxpkg_pkgs=(
+slacks_pkgs=(
     "curl"
     "python3"
     "docker"
@@ -375,7 +375,7 @@ update_packages() {
         "arch"|"artix-openrc"|"artix-runit"|"artix-dinit"|"artix-s6"|"garuda"|"cachyos")
             pacman -Sy --noconfirm
             ;;
-        "debian"|"ubuntu"|"linuxmint"|"zorin"|"slax")
+        "debian"|"ubuntu"|"linuxmint"|"zorin")
             apt-get update -y
             ;;
         "fedora"|"rhel")
@@ -392,7 +392,7 @@ update_packages() {
             sudo="doas"
             pkg_info update
             ;;
-        "slacks")
+        "slax"|"slacks")
             slaxpkg update
             ;;
         "darwin")
@@ -458,7 +458,7 @@ install_packages() {
             serviceman="service enable docker"
             start="service start docker"
             ;;
-        "debian"|"ubuntu"|"linuxmint"|"zorin"|"slax")
+        "debian"|"ubuntu"|"linuxmint"|"zorin")
             end=1
             pkgs=("${apt_pkgs[@]}")
             pm="apt-get"
@@ -492,9 +492,15 @@ install_packages() {
             serviceman="rcctl set docker on"
             serviceman2="rcctl enable docker"
             ;;
+        "slax")
+            end=1
+            pkgs=("${slax_pkgs[@]}")
+            pkgman="slaxpkg"
+            pm="slaxpkg"
+            ;;
         "slacks")
             end=1
-            pkgs=("${slaxpkg_pkgs[@]}")
+            pkgs=("${slacks_pkgs[@]}")
             pkgman="slaxpkg"
             pm="slaxpkg"
             ;;
@@ -556,9 +562,14 @@ install_packages() {
                 pkgs=("${pkg_add_pkgs[@]}")
                 pkgman="pkg_info"
                 ;;
-            "slaxpkg")
+            "slaxpkg-slax")
                 end=1
-                pkgs=("${slaxpkg_pkgs[@]}")
+                pkgs=("${slax_pkgs[@]}")
+                pkgman="slaxpkg"
+                ;;
+            "slaxpkg-slacks")
+                end=1
+                pkgs="${slacks_pkgs[@]}")
                 pkgman="slaxpkg"
                 ;;
             "homebrew"|"brew")
@@ -635,6 +646,7 @@ install_uv_via_script() {
     case $os in
         "slax"|"slacks")
             curl -LsSf https://astral.sh/uv/install.sh | bash
+            slaxpkg saveexec uv
             ;;
         "freebsd"|"openbsd")
             curl -LsSf https://astral.sh/uv/install.sh | doas -u "${1}" bash
