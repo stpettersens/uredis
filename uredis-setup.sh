@@ -285,8 +285,10 @@ detect_os() {
 
 detect_is_slax() {
     # Determine is Slax by detecting the `genslaxiso` utility.
+    local slaxpm
     local statusa
     local statusb
+    local statusc
     command -v genslaxiso > /dev/null
     statusa=$?
     if (( statusa == 0 )); then
@@ -300,11 +302,19 @@ detect_is_slax() {
     statusb=$?
     if (( statusb == 0 )); then
         os="slacks"
-        # Install package manager wrapper for Slackware Slax.
-        wget --no-check-certificate https://sh.homelab.stpettersen.xyz/slax/slaxpkg.sh
-        sha256cksm slaxpkg.sh
-        mv slaxpkg.sh /usr/local/bin/slaxpkg
-        chmod +x /usr/local/bin/slaxpkg
+    fi
+    if [[ $os_name == "Slax" ]]; then
+        # Install slaxpkg package manager wrapper if it doesn't already exist.
+        command -v slaxpkg
+        statusc=$?
+        if (( statusc != 0 )); then
+            slaxpm="/usr/bin/slaxpkg"
+            wget --no-check-certificate https://sh.homelab.stpettersen.xyz/slax/slaxpkg.sh
+            sha256cksm slaxpkg.sh
+            mv slaxpkg.sh "${slaxpm}"
+            chmod +x "${slaxpm}"
+            slaxpkg bootstrap
+        fi
     fi
 }
 
@@ -647,6 +657,8 @@ install_uv_via_script() {
         "slax"|"slacks")
             curl -LsSf https://astral.sh/uv/install.sh | bash
             slaxpkg saveexec uv
+            export PATH=$PATH:/root/.local/bin
+            return
             ;;
         "freebsd"|"openbsd")
             curl -LsSf https://astral.sh/uv/install.sh | doas -u "${1}" bash
