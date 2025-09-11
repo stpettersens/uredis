@@ -322,6 +322,14 @@ write_slax_iso() {
     if [[ $os == "slax" ]] || [[ $os == "slacks" ]]; then
         rm -rf /root/uredis
         rm -f /root/logo.txt
+        local writable
+        lsblk | grep sdb > /dev/null
+        writable=$?
+        if (( writable == 0)); then
+            echo "File system is writetable, so any changes"
+            echo "should have been written back as Slax modules (*.sb)."
+            echo
+        fi
         local writeiso
         read -r -p "Do you want to write an new Slax ISO with installed uRedis? (y/N): " writeiso < /dev/tty
         if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
