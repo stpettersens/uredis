@@ -335,7 +335,6 @@ write_slax_iso() {
         if [[ -z $writeiso ]] || [[ ${writeiso,,} == "n" ]]; then
             return
         elif [[ ${writeiso,,} == "y" ]]; then
-            # Write an ISO if system is not running from a flash drive.
             slaxpkg generateiso slax_uredis.iso
         fi
     fi
