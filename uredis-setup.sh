@@ -579,7 +579,7 @@ install_packages() {
                 ;;
             "slaxpkg-slacks")
                 end=1
-                pkgs="${slacks_pkgs[@]}")
+                pkgs=("${slacks_pkgs[@]}")
                 pkgman="slaxpkg"
                 ;;
             "homebrew"|"brew")
