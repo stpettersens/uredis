@@ -326,7 +326,7 @@ write_slax_iso() {
         lsblk | grep sdb > /dev/null
         writable=$?
         if (( writable == 0)); then
-            echo "File system is writetable, so any changes"
+            echo "File system is writable, so any changes"
             echo "should have been written back as Slax modules (*.sb)."
             echo
         fi
