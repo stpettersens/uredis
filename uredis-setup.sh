@@ -21,7 +21,11 @@
 # ------------------------------------------------------------------
 # Please install bash (if necessary) and curl.
 # ------------------------------------------------------------------
-# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup | sudo bash
+# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup | [sudo/doas] bash
+#
+# OR
+#
+# > wget -qO - https://uredis.homelab.stpettersen.xyz/setup | [sudo/doas] bash
 #
 # OR SAFER WAY, INSPECTING THE SCRIPT CONTENTS BEFORE RUNNING:
 # > curl -sSf https://uredis.homelab.stpettersen.xyz/setup > uredis-setup.sh
@@ -285,13 +289,16 @@ detect_os() {
 
 detect_is_slax() {
     # Determine is Slax by detecting the `genslaxiso` utility.
-    local slaxpm
     local statusa
     local statusb
     local statusc
+    local statusd
     command -v genslaxiso > /dev/null
     statusa=$?
-    if (( statusa == 0 )); then
+    # Determine if it is Debian derived Slax by detecting `apt-get`.
+    command -v "apt-get" > /dev/null
+    statusb=$?
+    if (( statusa == 0 )) && (( statusb == 0 )); then
         os="slax"
         os_name=${os^}
     fi
@@ -299,21 +306,17 @@ detect_is_slax() {
     # by detecting `slackpkg` utility.
     # Use os is "slacks" for that.
     command -v slackpkg > /dev/null
-    statusb=$?
-    if (( statusb == 0 )); then
+    statusc=$?
+    if ((( statusa == 0 )) && ( statusc == 0 )); then
         os="slacks"
+        os_name="Slax"
     fi
     if [[ $os_name == "Slax" ]]; then
         # Install slaxpkg package manager wrapper if it doesn't already exist.
         command -v slaxpkg
-        statusc=$?
-        if (( statusc != 0 )); then
-            slaxpm="/usr/bin/slaxpkg"
-            wget --no-check-certificate https://sh.homelab.stpettersen.xyz/slax/slaxpkg.sh
-            sha256cksm slaxpkg.sh
-            mv slaxpkg.sh "${slaxpm}"
-            chmod +x "${slaxpm}"
-            slaxpkg bootstrap
+        statusd=$?
+        if (( statusd != 0 )); then
+            wget -qO - https://sh.homelab.stpettersen.xyz/slax/setup-slaxpkg.sh | bash
         fi
     fi
 }
@@ -663,7 +666,7 @@ install_uv_via_script() {
     case $os in
         "slax"|"slacks")
             curl -LsSf https://astral.sh/uv/install.sh | bash
-            slaxpkg saveexec uv
+            slaxpkg save-exec uv
             export PATH=$PATH:/root/.local/bin
             return
             ;;
