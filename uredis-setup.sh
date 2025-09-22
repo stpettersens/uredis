@@ -6,7 +6,7 @@
 # To install uRedis in a similar way on Windows systems, please use uredis-setup.ps1
 # This script works (where Bash exists) with:
 #
-# * Alpine Linux (run curl -sSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash).
+# * Alpine Linux (run curl -LsSf https://sh.homelab.stpettersen.xyz/alpine/install-bash | doas ash).
 # * Void Linux.
 # * Arch Linux and its derivatives (e.g. Artix, Garuda, CachyOS).
 # * Debian/Ubuntu Linux and its derivatives (e.g. Linux Mint, Zorin OS).
@@ -21,7 +21,7 @@
 # ------------------------------------------------------------------
 # Please install bash (if necessary) and curl.
 # ------------------------------------------------------------------
-# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup.sh | [sudo/doas] bash
+# > curl -LsSf https://uredis.homelab.stpettersen.xyz/setup.sh | [sudo/doas] bash
 #
 # OR
 #
