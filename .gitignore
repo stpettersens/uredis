@@ -3,6 +3,7 @@ __pycache__
 .mypy_cache
 Dockerfile.txt
 version.txt
+MIT-LICENSE.txt
 *.zip
 *.pyz
 *.rdb
@@ -14,4 +15,3 @@ version.txt
 copyparty*
 localhost
 stpettersen_xyz
-setup

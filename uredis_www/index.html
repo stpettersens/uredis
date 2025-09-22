@@ -20,7 +20,7 @@ a:hover {
 }
 </style>
 <script type="application/javascript">
-  var g_copySetupText = "curl -sSf https://uredis.stpettersen.xyz/setup | sudo bash";
+  var g_copySetupText = "curl -sSf https://uredis.stpettersen.xyz/setup.sh | sudo bash";
   function homelab() {
     var h = "https://";
     var hostname = "uredis.homelab.stpettersen.xyz";
@@ -32,7 +32,7 @@ a:hover {
         document.getElementById("setup_url").innerHTML = setupUrl;
         document.getElementById("setup_url").href = setupUrl;
     }
-    g_copySetupText = "curl -sSf " + h + hostname + "/setup | sudo bash";
+    g_copySetupText = "curl -sSf " + h + hostname + "/setup.sh | sudo bash";
   }
   function copySetup() {
     navigator.clipboard.writeText(g_copySetupText);

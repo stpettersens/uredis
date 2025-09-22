@@ -21,14 +21,14 @@
 # ------------------------------------------------------------------
 # Please install bash (if necessary) and curl.
 # ------------------------------------------------------------------
-# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup | [sudo/doas] bash
+# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup.sh | [sudo/doas] bash
 #
 # OR
 #
-# > wget -qO - https://uredis.homelab.stpettersen.xyz/setup | [sudo/doas] bash
+# > wget -qO - https://uredis.homelab.stpettersen.xyz/setup.sh | [sudo/doas] bash
 #
 # OR SAFER WAY, INSPECTING THE SCRIPT CONTENTS BEFORE RUNNING:
-# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup > uredis-setup.sh
+# > curl -sSf https://uredis.homelab.stpettersen.xyz/setup.sh > uredis-setup.sh
 # > cat uredis-setup.sh
 # > bash uredis-setup.sh
 # ------------------------------------------------------------------

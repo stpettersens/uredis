@@ -30,7 +30,8 @@ if __name__ == "__main__":
 
     shutil.copy('logo.txt', _dir)
     shutil.copy('requirements.txt', _dir)
-    shutil.copy('Dockerfile', _dir)
+    shutil.copy('Dockerfile', os.path.join(_dir, 'Dockerfile.txt'))
+    shutil.copy('MIT-LICENSE', os.path.join(_dir, 'MIT-LICENSE.txt'))
 
     shutil.copy(os.path.join('services', 'freebsd', 'uredis_freebsd.sh'), os.path.join(_dir, 'services'))
     shutil.copy(os.path.join('services', 'openbsd', 'uredis_openbsd.sh'), os.path.join(_dir, 'services'))
@@ -58,7 +59,7 @@ if __name__ == "__main__":
             else:
                 out.append(l)
 
-    with open(os.path.join(_dir, 'setup'), 'w', newline='\n') as f:
+    with open(os.path.join(_dir, 'uredis-setup.sh'), 'w', newline='\n') as f:
         for o in out:
             f.write(o)
 
