@@ -61,7 +61,7 @@ run_docker:
 shellcheck:
 	$(shellcheck) uredis-setup.sh
 
-update: shellcheck package
+update: shellcheck deploy
 	@echo
 	@copyparty_sync
 

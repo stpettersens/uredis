@@ -26,6 +26,7 @@ if __name__ == "__main__":
     compression=zipfile.ZIP_DEFLATED) as release:
         release.write('README.md')
         release.write('version.txt')
+        release.write('MIT-LICENSE')
         release.write('uredis-server.pyz')
         release.write('uredis-client.pyz')
 
@@ -42,7 +43,5 @@ if __name__ == "__main__":
 
     with open(checksum_script, 'w') as schksum:
         schksum.write(f"{sha256sum("uredis-setup.sh")} uredis-setup.sh")
-
-    shutil.copy("uredis-setup.sh", "setup")
 
     sys.exit(0)
