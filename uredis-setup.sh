@@ -200,7 +200,7 @@ sha256cksm() {
 
 script_cksm() {
     if [[ ! -f "uredis-setup.sh" ]]; then
-        curl -sSf "${server}/setup" > uredis-setup.sh
+        curl -sSf "${server}/uredis-setup.sh" > uredis-setup.sh
     fi
     sha256cksm "uredis-setup.sh"
     if [[ $(basename "$0") != "uredis-setup.sh" ]]; then
@@ -307,7 +307,7 @@ detect_is_slax() {
     # Use os is "slacks" for that.
     command -v slackpkg > /dev/null
     statusc=$?
-    if ((( statusa == 0 )) && ( statusc == 0 )); then
+    if (( statusa == 0 )) && (( statusc == 0 )); then
         os="slacks"
         os_name="Slax"
     fi
